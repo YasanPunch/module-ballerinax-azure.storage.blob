@@ -43,6 +43,12 @@ project(':azure.storage.blob-ballerina').projectDir = file("ballerina")
 include ':azure.storage.blob-native'
 project(':azure.storage.blob-native').projectDir = file("native")
 
+include ':azure.storage.blob-compiler-plugin'
+project(':azure.storage.blob-compiler-plugin').projectDir = file("compiler-plugin")
+
+include ':azure.storage.blob-compiler-plugin-tests'
+project(':azure.storage.blob-compiler-plugin-tests').projectDir = file("compiler-plugin-tests")
+
 include ':azure.storage.blob-examples'
 project(':azure.storage.blob-examples').projectDir = file("examples")
 
