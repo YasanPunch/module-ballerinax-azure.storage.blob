@@ -461,7 +461,7 @@ against the resolved format.
 | Format | Selected by | Members serialized |
 |---|---|---|
 | none | no override and no `.json`, `.xml`, or `.csv` extension | `byte[]`, `string`, `stream<byte[], error?>` |
-| JSON | `JSON`, or `.json` | `json`, `record {}`, `record {}[]` |
+| JSON | `JSON`, or `.json` | `json`, `record {}` |
 | XML | `XML`, or `.xml` | `xml`, `record {}` |
 | CSV | `CSV`, or `.csv` | `record {}[]`, `stream<record {}, error?>` |
 
@@ -475,7 +475,7 @@ failure aborts with a client side `Error`, and every failure closes the source s
 The structured members serialize as follows:
 
 * **JSON**: a `json` value or a record (which includes any map of `anydata` members) becomes a
-  JSON document; a record array becomes a JSON array.
+  JSON document. A record array is never JSON; it is written as CSV.
 * **XML**: an `xml` value is written in its textual form. A record becomes a single element
   document whose root element is named `root`; the `@xmldata:Name` annotation renames the
   member elements, not the root. A record array is never XML.
