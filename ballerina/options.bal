@@ -311,28 +311,61 @@ public type CommitBlockListOptions record {|
 // SAS signature values
 // ---------------------------------------------------------------------------
 
-# The permissions granted by a blob or container SAS. Every permission is off unless enabled.
-public type BlobSasPermissions record {|
-    # Read the blob's content, properties, and metadata
+# The permissions granted by a container SAS. Every permission is off unless enabled.
+public type ContainerSasPermissions record {|
+    # Read blob content, properties, and metadata
     boolean read = false;
     # Append a block to an append blob
     boolean add = false;
     # Create a new blob
     boolean create = false;
-    # Write a blob's content, properties, and metadata
+    # Write blob content, properties, and metadata
     boolean write = false;
     # Delete a blob
     boolean delete = false;
-    # List the container's blobs; container scope only
+    # List the container's blobs
     boolean list = false;
-    # Read and write a blob's index tags
+    # Read and write index tags
     boolean tag = false;
-    # Run an index-tag query; container scope only
+    # Run an index-tag query
     boolean filter = false;
 |};
 
-# The values signed into a blob or container SAS token. A parameter may be carried by the
-# stored access policy or by the token, but not both.
+# The permissions granted by a blob SAS. Every permission is off unless enabled.
+public type BlobSasPermissions record {|
+    # Read the blob's content, properties, and metadata
+    boolean read = false;
+    # Append a block to the append blob
+    boolean add = false;
+    # Create the blob
+    boolean create = false;
+    # Write the blob's content, properties, and metadata
+    boolean write = false;
+    # Delete the blob
+    boolean delete = false;
+    # Read and write the blob's index tags
+    boolean tag = false;
+|};
+
+# The values signed into a container SAS token. A parameter may be carried by the stored
+# access policy or by the token, but not both.
+public type ContainerSasSignatureValues record {|
+    # When the token expires. May be omitted only when `identifier` supplies it
+    time:Utc expiryTime?;
+    # The permissions granted. May be omitted only when `identifier` supplies them
+    ContainerSasPermissions permissions?;
+    # A stored access policy on the container whose window and permissions the token inherits
+    string identifier?;
+    # When the token becomes valid; omit for immediately valid
+    time:Utc startTime?;
+    # The protocols a request presenting the token may use
+    SasProtocol protocol?;
+    # An IP address or range the requests must come from (e.g. `168.1.5.60-168.1.5.70`)
+    string ipRange?;
+|};
+
+# The values signed into a blob SAS token. A parameter may be carried by the stored access
+# policy or by the token, but not both.
 public type BlobSasSignatureValues record {|
     # When the token expires. May be omitted only when `identifier` supplies it
     time:Utc expiryTime?;

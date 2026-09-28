@@ -552,7 +552,7 @@ public isolated client class Client {
     #
     # + values - The values signed into the token (window, permissions, policy identifier)
     # + return - The SAS token, without a leading `?`, or an `Error`
-    public isolated function generateContainerSas(BlobSasSignatureValues values)
+    public isolated function generateContainerSas(ContainerSasSignatureValues values)
             returns string|Error = @java:Method {
         'class: "io.ballerina.lib.azure.storage.blob.client.SasOps"
     } external;
@@ -574,7 +574,7 @@ public isolated client class Client {
     # + values - The values signed into the token; an explicit window and permissions are required
     # + key - The user-delegation key from `AdminClient.getUserDelegationKey`
     # + return - The SAS token, without a leading `?`, or an `Error`
-    public isolated function generateContainerUserDelegationSas(BlobSasSignatureValues values,
+    public isolated function generateContainerUserDelegationSas(ContainerSasSignatureValues values,
             UserDelegationKey key) returns string|Error = @java:Method {
         'class: "io.ballerina.lib.azure.storage.blob.client.SasOps"
     } external;

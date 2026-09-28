@@ -172,6 +172,14 @@ public type RetryConfig record {|
     string secondaryHostUrl?;
 |};
 
+# A PKCS12 or JKS certificate store and the password that opens it.
+public type CertStore record {|
+    # Path to the store file
+    string path;
+    # The store password
+    string password;
+|};
+
 # A certificate and private key pair identifying the client for mutual TLS.
 public type CertKey record {|
     # Path to the client certificate file
@@ -184,11 +192,11 @@ public type CertKey record {|
 
 # TLS configuration for the connector's HTTPS traffic.
 public type SecureSocket record {|
-    # Path to a PEM certificate or a truststore file holding the trusted CA certificates
-    string cert?;
-    # A client certificate and key pair, or a keystore path, identifying the client for
-    # mutual TLS
-    CertKey|string key?;
+    # The trusted CA certificates: a PEM file path, or a truststore with its password
+    CertStore|string cert?;
+    # The client identity for mutual TLS: a certificate and key pair, or a keystore with its
+    # password
+    CertKey|CertStore key?;
     # The TLS protocol versions offered during the handshake (e.g. `["TLSv1.3", "TLSv1.2"]`)
     string[] protocolVersions?;
     # The cipher suites offered during the handshake
@@ -406,7 +414,7 @@ public type ContainerList record {|
     string nextMarker?;
 |};
 
-# How long soft-deleted blobs or containers are retained.
+# How long soft-deleted blobs, or metrics and log data, are retained.
 public type RetentionPolicy record {|
     # Whether the retention policy is enabled
     boolean enabled;
@@ -479,8 +487,6 @@ public type ServiceProperties record {|
     CorsRule[] cors?;
     # The blob soft-delete retention policy, the prerequisite for `undeleteBlob`
     RetentionPolicy deleteRetentionPolicy?;
-    # The container soft-delete retention policy, the prerequisite for `undeleteContainer`
-    RetentionPolicy containerDeleteRetentionPolicy?;
     # The static website settings
     StaticWebsiteProperties staticWebsite?;
     # The service version applied to requests that do not name one

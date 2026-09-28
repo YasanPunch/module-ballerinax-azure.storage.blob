@@ -218,10 +218,11 @@ The `TransportConfig` record covers the HTTP transport. Its fields:
 * `connectionPool`: tunes the connection pool. Its `maxConnections` defaults to 50,
   `idleTimeoutSeconds` to 60, `connectTimeoutSeconds` to 10, and `readTimeoutSeconds` to 60.
   These values apply whenever the pool is not configured.
-* `secureSocket`: configures custom TLS: trust material (a truststore or a PEM certificate
-  path), a client identity for mutual TLS (a keystore or a certificate and key pair), the
-  offered TLS versions and cipher suites, host name verification, session reuse, revocation
-  checking, an SNI host name, and handshake and session timeouts. No default.
+* `secureSocket`: configures custom TLS: trust material (a PEM certificate path, or a
+  PKCS12 or JKS truststore with its password), a client identity for mutual TLS (a certificate
+  and key pair, or a keystore with its password), the offered TLS versions and cipher suites,
+  host name verification, session reuse, revocation checking, an SNI host name, and handshake
+  and session timeouts. No default.
 
 ## 3. AdminClient
 
@@ -257,8 +258,8 @@ blob:AdminClient admin = check new (auth = {accountName: "myacct", accountKey: "
   Anonymous access also requires the storage account to permit it.
 * `deleteContainer(containerName, options)`: deletes a container and every blob in it.
   `DeleteContainerOptions.leaseId` passes the active lease when the container is leased. When
-  the account's container soft delete retention policy is enabled, the container is retained
-  for the configured period.
+  container soft delete is enabled on the storage account, the container is retained for the
+  configured period and can be restored with `undeleteContainer`.
 * `undeleteContainer(containerName, deletedContainerVersion)`: restores a soft deleted
   container. Soft deleted containers are listed by `listContainers({includeDeleted: true})`,
   where each carries the `deletedVersion` this operation takes.
@@ -275,8 +276,8 @@ if !(check admin->hasContainer("invoices")) {
 
 * `getServiceProperties()`: reads the account's blob service configuration as a
   `ServiceProperties` record. The record models the full configuration document: request
-  metrics collection, classic logging, CORS rules, the blob and container soft delete
-  retention policies, the static website settings, and the default service version.
+  metrics collection, classic logging, CORS rules, the blob soft delete retention policy,
+  the static website settings, and the default service version.
 * `setServiceProperties(properties)`: writes the configuration. Each configuration group is
   an optional field of the record. A group present in the record replaces that group as a
   whole; a group absent from the record leaves the service's current setting untouched. An
@@ -284,9 +285,11 @@ if !(check admin->hasContainer("invoices")) {
   preserves them. To change one group, read the current configuration, modify it, and pass
   the result back.
 
-Enabling the soft delete retention policies here is the prerequisite for `undeleteBlob` and
-`undeleteContainer`. The static website settings configure the service side feature; this
-module offers no operations against the static website endpoint itself.
+Enabling the blob soft delete retention policy here is the prerequisite for `undeleteBlob`.
+Container soft delete is a storage account setting, enabled on the account rather than through
+the service properties, and is the prerequisite for `undeleteContainer`. The static website
+settings configure the service side feature; this module offers no operations against the
+static website endpoint itself.
 
 ### 3.4 Account Information
 
@@ -754,10 +757,13 @@ places fails at use time with HTTP 400. Generation validates locally what is kno
 signing time, and fails with a client side `Error` when neither an `identifier` nor an
 `expiryTime` is supplied.
 
-The permissions record carries one boolean per wire permission whose operation this module
-offers: `read`, `add` (appending, section 4.10), `create`, `write`, `delete`, `list`
-(container scope), `tag` (index tags, section 4.7), and `filter` (tag queries, container
-scope, section 4.7).
+The signature values and their permissions record come in two shapes, one per scope, so a
+token cannot ask for a permission its scope does not carry. The container scoped methods take
+`ContainerSasSignatureValues`, whose `ContainerSasPermissions` carries one boolean per wire
+permission whose operation this module offers: `read`, `add` (appending, section 4.10),
+`create`, `write`, `delete`, `list`, `tag` (index tags, section 4.7), and `filter` (tag
+queries, section 4.7). The blob scoped methods take `BlobSasSignatureValues`, whose
+`BlobSasPermissions` carries the same set without `list` and `filter`.
 
 The user delegation variants sign with a `UserDelegationKey` (from
 `AdminClient.getUserDelegationKey`) instead of the account key, so no storage key is handled.
