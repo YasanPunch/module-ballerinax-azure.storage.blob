@@ -530,7 +530,7 @@ public isolated client class Client {
     # + return - An `Error` if the blocks could not be committed, otherwise `()`. All block ids
     #            must be equal in length; an unequal set fails before the request is made
     isolated remote function commitBlockList(string path, string[] blockIds,
-            CommitBlockListOptions? options = ()) returns Error? = @java:Method {
+            UploadOptions? options = ()) returns Error? = @java:Method {
         'class: "io.ballerina.lib.azure.storage.blob.client.BlockOps"
     } external;
 

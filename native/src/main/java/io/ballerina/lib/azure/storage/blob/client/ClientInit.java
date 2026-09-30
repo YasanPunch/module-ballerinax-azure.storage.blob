@@ -42,7 +42,4 @@ public final class ClientInit {
         throw new UnsupportedOperationException("not implemented");
     }
 
-    public static Object initCaller(BObject caller, BString containerName, BMap<BString, Object> config) {
-        throw new UnsupportedOperationException("not implemented");
-    }
 }

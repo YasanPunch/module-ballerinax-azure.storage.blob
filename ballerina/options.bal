@@ -98,6 +98,12 @@ public type ContainerListOptions record {|
     string marker?;
 |};
 
+# The lease a write must carry. Included by every option record of a lease-guarded write.
+public type LeaseOptions record {|
+    # The active lease id, required when the target is leased
+    string leaseId?;
+|};
+
 // ---------------------------------------------------------------------------
 // Container options
 // ---------------------------------------------------------------------------
@@ -113,20 +119,17 @@ public type ContainerCreateOptions record {|
 
 # Options for `deleteContainer`.
 public type DeleteContainerOptions record {|
-    # The active lease id, required when the container is leased elsewhere
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `setContainerMetadata`.
 public type ContainerMetadataOptions record {|
-    # The active lease id, required when the container is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `setContainerAccessPolicy`.
 public type AccessPolicyOptions record {|
-    # The active lease id, required when the container is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 // ---------------------------------------------------------------------------
@@ -135,24 +138,21 @@ public type AccessPolicyOptions record {|
 
 # Options for `deleteBlob`.
 public type DeleteBlobOptions record {|
+    *LeaseOptions;
     # What happens to the blob's snapshots. Required when the blob has snapshots
     DeleteSnapshotsOption deleteSnapshots?;
     # Deletes this snapshot instead of the blob
     string snapshotId?;
-    # The active lease id, required when the blob is leased
-    string leaseId?;
 |};
 
 # Options for `setBlobMetadata`.
 public type BlobMetadataOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `setContentHeaders`.
 public type ContentHeaderOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 // ---------------------------------------------------------------------------
@@ -161,6 +161,7 @@ public type ContentHeaderOptions record {|
 
 # Options for the uploads.
 public type UploadOptions record {|
+    *LeaseOptions;
     # The content headers stored with the new blob
     ContentHeaders contentHeaders?;
     # The metadata stored with the new blob
@@ -169,8 +170,6 @@ public type UploadOptions record {|
     map<string> tags?;
     # The access tier the new blob starts in
     AccessTier accessTier?;
-    # The active lease id, required when the destination blob is leased
-    string leaseId?;
 |};
 
 # Options for `upload`, extending the upload options with the serialization format.
@@ -201,8 +200,10 @@ public type GetBlobOptions record {|
 // Copy, tier, tag and snapshot options
 // ---------------------------------------------------------------------------
 
-# Options for the copies.
+# Options for the copies. An asynchronous copy over a leased destination requires that lease to
+# be infinite.
 public type CopyOptions record {|
+    *LeaseOptions;
     # The metadata stored with the destination blob; when omitted, the destination inherits
     # the source's metadata
     map<string> metadata?;
@@ -210,37 +211,30 @@ public type CopyOptions record {|
     map<string> tags?;
     # The access tier the destination blob starts in
     AccessTier accessTier?;
-    # The destination's active lease id. An asynchronous copy over a leased destination
-    # requires that lease to be infinite
-    string leaseId?;
 |};
 
 # Options for `abortCopy`.
 public type AbortCopyOptions record {|
-    # The destination blob's active lease id, required when the destination is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `setAccessTier`.
 public type SetAccessTierOptions record {|
+    *LeaseOptions;
     # How quickly an archived blob is rehydrated; meaningful when leaving the archive tier
     RehydratePriority rehydratePriority?;
-    # The active lease id, required when the blob is leased
-    string leaseId?;
 |};
 
 # Options for the index-tag writes.
 public type TagOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `createSnapshot`.
 public type CreateSnapshotOptions record {|
+    *LeaseOptions;
     # The snapshot's own metadata; when omitted, the snapshot inherits the blob's metadata
     map<string> metadata?;
-    # The active lease id, required when the blob is leased
-    string leaseId?;
 |};
 
 // ---------------------------------------------------------------------------
@@ -249,26 +243,23 @@ public type CreateSnapshotOptions record {|
 
 # Options for creating an append blob or a page blob.
 public type CreateBlobOptions record {|
+    *LeaseOptions;
     # The content headers stored with the new blob
     ContentHeaders contentHeaders?;
     # The metadata stored with the new blob
     map<string> metadata?;
     # The index tags stored with the new blob
     map<string> tags?;
-    # The active lease id, required when an existing blob at the path is leased
-    string leaseId?;
 |};
 
 # Options for the append-block operations.
 public type AppendBlockOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for the page write operations.
 public type PageOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `listPageRanges`.
@@ -281,55 +272,19 @@ public type PageRangeOptions record {|
 
 # Options for `stageBlock`.
 public type StageBlockOptions record {|
-    # The active lease id, required when the blob is leased
-    string leaseId?;
+    *LeaseOptions;
 |};
 
 # Options for `stageBlockFromUrl`.
 public type StageBlockFromUrlOptions record {|
+    *LeaseOptions;
     # Stages only this byte range of the source instead of its whole content
     ByteRange sourceRange?;
-    # The active lease id, required when the blob is leased
-    string leaseId?;
-|};
-
-# Options for `commitBlockList`.
-public type CommitBlockListOptions record {|
-    # The content headers stored with the committed blob
-    ContentHeaders contentHeaders?;
-    # The metadata stored with the committed blob
-    map<string> metadata?;
-    # The index tags stored with the committed blob
-    map<string> tags?;
-    # The access tier the committed blob starts in
-    AccessTier accessTier?;
-    # The active lease id, required when the blob is leased
-    string leaseId?;
 |};
 
 // ---------------------------------------------------------------------------
 // SAS signature values
 // ---------------------------------------------------------------------------
-
-# The permissions granted by a container SAS. Every permission is off unless enabled.
-public type ContainerSasPermissions record {|
-    # Read blob content, properties, and metadata
-    boolean read = false;
-    # Append a block to an append blob
-    boolean add = false;
-    # Create a new blob
-    boolean create = false;
-    # Write blob content, properties, and metadata
-    boolean write = false;
-    # Delete a blob
-    boolean delete = false;
-    # List the container's blobs
-    boolean list = false;
-    # Read and write index tags
-    boolean tag = false;
-    # Run an index-tag query
-    boolean filter = false;
-|};
 
 # The permissions granted by a blob SAS. Every permission is off unless enabled.
 public type BlobSasPermissions record {|
@@ -347,13 +302,20 @@ public type BlobSasPermissions record {|
     boolean tag = false;
 |};
 
-# The values signed into a container SAS token. A parameter may be carried by the stored
-# access policy or by the token, but not both.
-public type ContainerSasSignatureValues record {|
+# The permissions granted by a container SAS: the blob permissions, plus listing and tag queries.
+public type ContainerSasPermissions record {|
+    *BlobSasPermissions;
+    # List the container's blobs
+    boolean list = false;
+    # Run an index-tag query
+    boolean filter = false;
+|};
+
+# The values shared by the container and blob SAS tokens. A parameter may be carried by the
+# stored access policy or by the token, but not both.
+public type ServiceSasSignatureValues record {|
     # When the token expires. May be omitted only when `identifier` supplies it
     time:Utc expiryTime?;
-    # The permissions granted. May be omitted only when `identifier` supplies them
-    ContainerSasPermissions permissions?;
     # A stored access policy on the container whose window and permissions the token inherits
     string identifier?;
     # When the token becomes valid; omit for immediately valid
@@ -364,21 +326,18 @@ public type ContainerSasSignatureValues record {|
     string ipRange?;
 |};
 
-# The values signed into a blob SAS token. A parameter may be carried by the stored access
-# policy or by the token, but not both.
+# The values signed into a container SAS token.
+public type ContainerSasSignatureValues record {|
+    *ServiceSasSignatureValues;
+    # The permissions granted. May be omitted only when `identifier` supplies them
+    ContainerSasPermissions permissions?;
+|};
+
+# The values signed into a blob SAS token.
 public type BlobSasSignatureValues record {|
-    # When the token expires. May be omitted only when `identifier` supplies it
-    time:Utc expiryTime?;
+    *ServiceSasSignatureValues;
     # The permissions granted. May be omitted only when `identifier` supplies them
     BlobSasPermissions permissions?;
-    # A stored access policy on the container whose window and permissions the token inherits
-    string identifier?;
-    # When the token becomes valid; omit for immediately valid
-    time:Utc startTime?;
-    # The protocols a request presenting the token may use
-    SasProtocol protocol?;
-    # An IP address or range the requests must come from (e.g. `168.1.5.60-168.1.5.70`)
-    string ipRange?;
 |};
 
 # The permissions granted by an account-level SAS. Every permission is off unless enabled.

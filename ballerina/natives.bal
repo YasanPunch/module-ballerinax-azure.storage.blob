@@ -28,8 +28,3 @@ isolated function initClient(Client blobClient, string containerName, ClientConf
         returns Error? = @java:Method {
     'class: "io.ballerina.lib.azure.storage.blob.client.ClientInit"
 } external;
-
-isolated function initCaller(Caller caller, string containerName, ClientConfiguration config)
-        returns Error? = @java:Method {
-    'class: "io.ballerina.lib.azure.storage.blob.client.ClientInit"
-} external;
