@@ -33,6 +33,7 @@ import io.ballerina.lib.azure.storage.blob.util.BlobErrorCreator;
 import io.ballerina.lib.azure.storage.blob.util.OptionsReader;
 import io.ballerina.runtime.api.Environment;
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.utils.StringUtils;
 import io.ballerina.runtime.api.values.BArray;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
@@ -49,6 +50,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Native implementations of the {@code Client} transfer operations: local-file upload and
@@ -115,23 +117,24 @@ public final class TransferOps {
      * Stages one chunk of a stream upload as an uncommitted block. Until the commit no blob
      * exists at the path, and an abandoned upload leaves only blocks the service expires.
      */
-    public static Object stageStreamBlock(Environment env, BObject self, BString destinationPath, long index,
-                                          BArray chunk, Object options) {
+    public static Object stageStreamBlock(Environment env, BObject self, BString destinationPath, BString uploadId,
+                                          long index, BArray chunk, Object options) {
         return BallerinaAzureClient.invoke(env, () -> {
             byte[] bytes = chunk.getBytes();
-            BlobOps.blobClient(self, destinationPath).getBlockBlobClient().stageBlockWithResponse(blockId(index),
+            BlobOps.blobClient(self, destinationPath).getBlockBlobClient().stageBlockWithResponse(
+                    blockId(uploadId.getValue(), index),
                     new ByteArrayInputStream(bytes), bytes.length, null, OptionsReader.leaseId(options), null, null);
             return null;
         });
     }
 
     /** Commits the staged blocks of a stream upload, creating (or replacing) the blob. */
-    public static Object commitStreamBlocks(Environment env, BObject self, BString destinationPath, long blockCount,
-                                            Object options, Object appliedFormat) {
+    public static Object commitStreamBlocks(Environment env, BObject self, BString destinationPath, BString uploadId,
+                                            long blockCount, Object options, Object appliedFormat) {
         return BallerinaAzureClient.invoke(env, () -> {
             List<String> blockIds = new ArrayList<>();
             for (long i = 0; i < blockCount; i++) {
-                blockIds.add(blockId(i));
+                blockIds.add(blockId(uploadId.getValue(), i));
             }
             BlockBlobCommitBlockListOptions sdkOptions = new BlockBlobCommitBlockListOptions(blockIds)
                     .setHeaders(headersWithAutoContentType(options, appliedFormat))
@@ -216,11 +219,21 @@ public final class TransferOps {
     }
 
     /**
-     * The block id of the {@code index}-th staged block: a zero-padded decimal, base64-encoded.
-     * Every id of one upload has the same length, which the commit requires.
+     * A fresh id for one stream upload, prefixed to its block ids so that concurrent uploads to
+     * the same path never stage over each other's blocks (block ids are scoped to the blob).
      */
-    static String blockId(long index) {
-        return Base64.getEncoder().encodeToString(String.format("%08d", index).getBytes(StandardCharsets.US_ASCII));
+    public static BString newStreamUploadId() {
+        return StringUtils.fromString(UUID.randomUUID().toString().replace("-", ""));
+    }
+
+    /**
+     * The block id of the {@code index}-th staged block of an upload: the upload id and a
+     * zero-padded decimal, base64-encoded. Every id of one upload has the same length, which
+     * the commit requires, and stays under the service's 64-byte limit.
+     */
+    static String blockId(String uploadId, long index) {
+        return Base64.getEncoder().encodeToString(
+                String.format("%s-%08d", uploadId, index).getBytes(StandardCharsets.US_ASCII));
     }
 
     // The explicit content headers, with the content type filled from the applied serialization

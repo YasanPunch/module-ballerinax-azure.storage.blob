@@ -46,12 +46,18 @@ isolated function externUpload(Client blobClient, byte[]|string|xml content, str
 // block ceiling one streamed upload can reach about 195 GiB.
 const int STREAM_BLOCK_BYTES = 4 * 1024 * 1024;
 
-isolated function stageStreamBlock(Client blobClient, string destinationPath, int index, byte[] chunk,
-        UploadContentOptions? options) returns Error? = @java:Method {
+// Each stream upload stages its blocks under an id of its own, so two uploads to the same path
+// cannot commit each other's blocks.
+isolated function newStreamUploadId() returns string = @java:Method {
     'class: "io.ballerina.lib.azure.storage.blob.client.TransferOps"
 } external;
 
-isolated function commitStreamBlocks(Client blobClient, string destinationPath, int blockCount,
+isolated function stageStreamBlock(Client blobClient, string destinationPath, string uploadId, int index,
+        byte[] chunk, UploadContentOptions? options) returns Error? = @java:Method {
+    'class: "io.ballerina.lib.azure.storage.blob.client.TransferOps"
+} external;
+
+isolated function commitStreamBlocks(Client blobClient, string destinationPath, string uploadId, int blockCount,
         UploadContentOptions? options, FileFormat? appliedFormat) returns Error? = @java:Method {
     'class: "io.ballerina.lib.azure.storage.blob.client.TransferOps"
 } external;

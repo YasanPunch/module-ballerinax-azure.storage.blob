@@ -19,6 +19,7 @@
 // Azurite emulator otherwise. One backend per run: credentials present means live only, and
 // no test behaves differently between the two.
 
+import ballerina/lang.runtime;
 import ballerina/os;
 import ballerina/test;
 import ballerina/time;
@@ -106,5 +107,26 @@ function cleanUpContainers() returns error? {
         if deleted is Error && deleted !is NotFoundError {
             return deleted;
         }
+    }
+}
+
+// Polls until the probe reports true, for the effects the service applies asynchronously
+// (a container deletion completing, a restore landing).
+function await(function () returns boolean|error probe, decimal timeoutSeconds = 30,
+        decimal intervalSeconds = 0.25) returns error? {
+    decimal waited = 0;
+    while true {
+        boolean|error met = probe();
+        if met is boolean && met {
+            return;
+        }
+        if waited >= timeoutSeconds {
+            if met is error {
+                return met;
+            }
+            return error(string `condition not met within ${timeoutSeconds}s`);
+        }
+        runtime:sleep(intervalSeconds);
+        waited += intervalSeconds;
     }
 }

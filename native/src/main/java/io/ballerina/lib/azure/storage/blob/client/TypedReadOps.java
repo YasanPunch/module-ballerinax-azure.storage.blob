@@ -57,7 +57,6 @@ import java.util.Locale;
  */
 public final class TypedReadOps {
 
-    private static final String XML_TYPE_NAME = "xml";
     // The generator class backing the lazy byte stream, declared in natives.bal.
     private static final String CONTENT_STREAM_GENERATOR_CLASS = "ContentStreamGenerator";
 
@@ -75,33 +74,44 @@ public final class TypedReadOps {
 
     /** Retrieves the blob's content in the form the target typedesc selects. */
     public static Object getBlob(Environment env, BObject self, BString path, Object options, BTypedesc targetType) {
+        // The declared type drives the binding, so a readonly intersection yields a readonly
+        // value; the implied type (references and intersections unwrapped) drives the routing.
         Type described = TypeUtils.getReferredType(targetType.getDescribingType());
-        if (described.getTag() == TypeTags.STREAM_TAG) {
-            return streamTarget(env, self, path, options, (StreamType) described);
+        Type implied = TypeUtils.getImpliedType(described);
+        if (implied.getTag() == TypeTags.STREAM_TAG) {
+            return streamTarget(env, self, path, options, (StreamType) implied);
         }
         Object bytes = readBlobBytes(env, self, path, options);
         if (bytes instanceof BError) {
             return bytes;
         }
-        return bindMaterialized(env, (BArray) bytes, described, path, options);
+        return bindMaterialized(env, (BArray) bytes, described, implied, path, options);
     }
 
     // Binds materialized content to a non-stream target.
-    private static Object bindMaterialized(Environment env, BArray byteArray, Type described,
+    private static Object bindMaterialized(Environment env, BArray byteArray, Type described, Type implied,
                                            BString path, Object options) {
-        switch (described.getTag()) {
+        switch (implied.getTag()) {
             case TypeTags.STRING_TAG:
                 return decodeText(byteArray);
             case TypeTags.ARRAY_TAG:
-                return bindArrayTarget(env, byteArray, (ArrayType) described, path, options);
+                return bindArrayTarget(env, byteArray, described, (ArrayType) implied, path, options);
             case TypeTags.RECORD_TYPE_TAG:
             case TypeTags.MAP_TAG:
                 return bindRecordTarget(byteArray, described, path, options);
+            case TypeTags.UNION_TAG:
+                // A union target binds through the JSON parser; a format that resolves to XML
+                // or CSV has no union binding.
+                String format = resolveFormat(path, options);
+                if (format != null && !FORMAT_JSON.equals(format)) {
+                    return BlobErrorCreator.clientError("a union target binds from JSON only; use a single "
+                            + "record or record array target for " + format + " content", null);
+                }
+                return bindJson(byteArray, described);
             default:
-                if (XML_TYPE_NAME.equals(described.getQualifiedName())) {
+                if (TypeTags.isXMLTypeTag(implied.getTag())) {
                     return bindXml(byteArray, described);
                 }
-                // json (and json-shaped unions) bind through the JSON parser.
                 return bindJson(byteArray, described);
         }
     }
@@ -109,9 +119,9 @@ public final class TypedReadOps {
     // byte[] is the raw content; a record or map array binds per the resolved format (a
     // JSON array or CSV rows; XML has no top-level array). Any other array is a json-shaped
     // target: it binds through the JSON parser, except that CSV content never binds to it.
-    private static Object bindArrayTarget(Environment env, BArray byteArray, ArrayType arrayType,
+    private static Object bindArrayTarget(Environment env, BArray byteArray, Type described, ArrayType arrayType,
                                           BString path, Object options) {
-        Type element = TypeUtils.getReferredType(arrayType.getElementType());
+        Type element = TypeUtils.getImpliedType(arrayType.getElementType());
         if (element.getTag() == TypeTags.BYTE_TAG) {
             return byteArray;
         }
@@ -122,14 +132,14 @@ public final class TypedReadOps {
                         "CSV content binds to a record array target; read the content as string "
                                 + "or byte[] and bind rows with the data.csv module", null);
             }
-            return bindJson(byteArray, arrayType);
+            return bindJson(byteArray, described);
         }
         if (format == null) {
             return unresolvableFormat("record array");
         }
         return switch (format) {
-            case FORMAT_JSON -> bindJson(byteArray, arrayType);
-            case FORMAT_CSV -> parseCsv(env, byteArray, arrayType);
+            case FORMAT_JSON -> bindJson(byteArray, described);
+            case FORMAT_CSV -> parseCsv(env, byteArray, described);
             default -> BlobErrorCreator.clientError(
                     "a record array target does not bind from XML; use a '.json' or '.csv' source, "
                             + "or an explicit fileFormat", null);
@@ -160,8 +170,9 @@ public final class TypedReadOps {
             return opened;
         }
         Type constraint = TypeUtils.getReferredType(streamType.getConstrainedType());
-        boolean byteStream = constraint.getTag() == TypeTags.ARRAY_TAG
-                && TypeUtils.getReferredType(((ArrayType) constraint).getElementType()).getTag()
+        Type impliedConstraint = TypeUtils.getImpliedType(constraint);
+        boolean byteStream = impliedConstraint.getTag() == TypeTags.ARRAY_TAG
+                && TypeUtils.getImpliedType(((ArrayType) impliedConstraint).getElementType()).getTag()
                         == TypeTags.BYTE_TAG;
         if (byteStream) {
             // The stream is typed with the DECLARED constraint and completion, so a target
