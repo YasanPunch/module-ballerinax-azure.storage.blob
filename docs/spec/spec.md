@@ -569,7 +569,9 @@ stream<byte[], error?> chunks = check invoices->getBlob("2026/q1/large.bin");
 ### 4.5 Copy Operations
 
 * `copyBlob(sourcePath, destinationPath, options)`: copies a blob within the bound container
-  under this client's credentials, returning a `CopyInfo`.
+  under this client's credentials, returning a `CopyInfo`. The service authorizes the copy
+  source separately from the request, so a client authenticated with a SAS attaches that SAS
+  to the source URL; a shared key authorizes a source in the same account on its own.
 * `copyBlobFromUrl(sourceUrl, destinationPath, options)`: copies from any Azure Storage URL
   the service can read: a blob in another container or account, or a file in Azure Files. A
   source in the same storage account is authorized by this client's own credential. A source
@@ -707,7 +709,7 @@ check invoices->appendBlock("logs/2026-08.log", line2);
   snapshot.
 
 Page writes to a blob of another type fail with an `InvalidBlobTypeError`, and misaligned
-offsets or lengths fail with a `RangeNotSatisfiableError`. The `blobSequenceNumber` of
+offsets or lengths are refused with a client side `Error` before any request is made. The `blobSequenceNumber` of
 `BlobProperties` is the page blob's write sequence marker. The page write operations carry the
 lease id in their options when the blob is leased.
 

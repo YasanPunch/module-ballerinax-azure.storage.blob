@@ -118,6 +118,10 @@ function testListContainersLimitAndMarker() returns error? {
     ContainerList second = check admin->listContainers({prefix, 'limit: 2, marker: first.nextMarker});
     test:assertEquals(second.containers.length(), 1);
     test:assertFalse(second.hasKey("nextMarker"));
+    // A marker without a limit resumes the whole remaining listing.
+    ContainerList rest = check admin->listContainers({prefix, marker: first.nextMarker});
+    test:assertEquals(rest.containers.length(), 1);
+    test:assertFalse(rest.hasKey("nextMarker"));
 
     ContainerList all = check admin->listContainers({prefix});
     test:assertEquals(all.containers.length(), 3);

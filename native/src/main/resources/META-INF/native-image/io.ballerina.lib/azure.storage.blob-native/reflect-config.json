@@ -1386,10 +1386,6 @@
     "allDeclaredMethods": true
   },
   {
-    "name": "com.azure.storage.blob.models.BlobStorageException",
-    "allDeclaredConstructors": true
-  },
-  {
     "name": "com.azure.storage.blob.implementation.models.BlobStorageExceptionInternal",
     "methods": [
       {
