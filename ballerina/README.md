@@ -63,6 +63,8 @@ To use the `azure.storage.blob` connector in your Ballerina application, modify 
 ### Step 1: Import the module
 
 ```ballerina
+import ballerina/io;
+
 import ballerinax/azure.storage.blob;
 ```
 

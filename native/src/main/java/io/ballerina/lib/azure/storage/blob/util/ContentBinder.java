@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
  * {@code ballerina/data.xmldata} modules, shared by the client typed reads (strict) and, later, the
  * listener content handlers (lax-aware). A binding failure is thrown as the module's generic
  * {@code Error}, prefixed with the caller's context message. CSV binding runs on a Ballerina
- * strand instead (see the module-level {@code bindCsvContent} helper), because the data.csv
+ * strand instead (see {@code TypedReadOps#parseCsv} and {@code TypedReadOps#streamTarget}), because the data.csv
  * parser needs the runtime environment.
  */
 public final class ContentBinder {

@@ -72,8 +72,13 @@ public final class ListOps {
                     BallerinaAzureClient.getServiceClient(self).listBlobContainers(sdkOptions, null);
             BArray containers = RecordMapper.recordArray(RecordMapper.RECORD_CONTAINER_INFO);
             if (limit == null) {
-                for (BlobContainerItem item : iterable) {
-                    containers.append(RecordMapper.containerInfo(item));
+                // Without a limit the whole listing is returned, from the marker when one is given.
+                Iterable<PagedResponse<BlobContainerItem>> pages =
+                        marker == null ? iterable.iterableByPage() : iterable.iterableByPage(marker);
+                for (PagedResponse<BlobContainerItem> page : pages) {
+                    for (BlobContainerItem item : page.getValue()) {
+                        containers.append(RecordMapper.containerInfo(item));
+                    }
                 }
                 return RecordMapper.containerList(containers, null);
             }

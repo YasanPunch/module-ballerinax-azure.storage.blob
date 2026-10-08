@@ -38,11 +38,21 @@ public final class CopyOps {
     private CopyOps() {
     }
 
-    /** Starts a copy of a blob in the bound container to another path in it. */
+    /**
+     * Starts a copy of a blob in the bound container to another path in it. The service
+     * authorizes the copy source separately from the request, so a SAS credential is attached
+     * to the source URL; a shared key authorizes a same-account source on its own.
+     */
     public static Object copyBlob(Environment env, BObject self, BString sourcePath, BString destinationPath,
                                   Object options) {
-        return BallerinaAzureClient.invoke(env, () -> beginCopy(self,
-                BlobOps.blobClient(self, sourcePath).getBlobUrl(), destinationPath, options));
+        return BallerinaAzureClient.invoke(env, () -> {
+            String sourceUrl = BlobOps.blobClient(self, sourcePath).getBlobUrl();
+            String signature = (String) self.getNativeData(BallerinaAzureClient.NATIVE_SAS_SIGNATURE);
+            if (signature != null) {
+                sourceUrl = sourceUrl + (sourceUrl.contains("?") ? "&" : "?") + signature;
+            }
+            return beginCopy(self, sourceUrl, destinationPath, options);
+        });
     }
 
     /** Starts a copy from any readable blob URL to a path in the bound container. */

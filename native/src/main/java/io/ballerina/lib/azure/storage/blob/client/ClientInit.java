@@ -86,6 +86,7 @@ public final class ClientInit {
     public static Object initAdminClient(BObject self, BMap<BString, Object> config) {
         try {
             self.addNativeData(BallerinaAzureClient.NATIVE_SERVICE_CLIENT, buildServiceClient(config));
+            storeSasSignature(self, config);
             return null;
         } catch (BError e) {
             return e;
@@ -123,6 +124,24 @@ public final class ClientInit {
         self.addNativeData(BallerinaAzureClient.NATIVE_SERVICE_CLIENT, serviceClient);
         self.addNativeData(BallerinaAzureClient.NATIVE_CONTAINER_CLIENT,
                 serviceClient.getBlobContainerClient(container));
+        storeSasSignature(self, config);
+    }
+
+    // A SAS signs the request alone; a copy source in the same account must carry it too, so
+    // the query of a SAS credential is kept for the copy operations.
+    @SuppressWarnings("unchecked")
+    private static void storeSasSignature(BObject self, BMap<BString, Object> config) {
+        BMap<BString, Object> auth = (BMap<BString, Object>) config.getMapValue(AUTH);
+        String signature = null;
+        if (auth.containsKey(SAS_TOKEN)) {
+            signature = requireNonEmpty(auth, SAS_TOKEN);
+        } else if (auth.containsKey(SAS_URL)) {
+            signature = URI.create(requireNonEmpty(auth, SAS_URL)).getRawQuery();
+        }
+        if (signature != null) {
+            self.addNativeData(BallerinaAzureClient.NATIVE_SAS_SIGNATURE,
+                    signature.startsWith("?") ? signature.substring(1) : signature);
+        }
     }
 
     /**

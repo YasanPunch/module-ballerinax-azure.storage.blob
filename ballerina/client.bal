@@ -213,6 +213,10 @@ public isolated client class Client {
         } else if content is byte[]|string {
             payload = content;
         } else if content is xml {
+            if resolveUploadFormat(destinationPath, options?.fileFormat) !is XML {
+                return error Error("xml content requires a '.xml' extension in the destination path or an explicit "
+                        + "XML fileFormat");
+            }
             payload = content;
             appliedFormat = XML;
         } else {

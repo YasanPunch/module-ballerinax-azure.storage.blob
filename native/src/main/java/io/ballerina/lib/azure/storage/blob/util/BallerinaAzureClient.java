@@ -38,6 +38,8 @@ public final class BallerinaAzureClient {
     // Keys under which the SDK clients are stored on client objects.
     public static final String NATIVE_SERVICE_CLIENT = "serviceClient";
     public static final String NATIVE_CONTAINER_CLIENT = "containerClient";
+    // The SAS query a SAS-authenticated client was built with; a same-account copy source carries it.
+    public static final String NATIVE_SAS_SIGNATURE = "sasSignature";
 
     private static final int MAX_CAUSE_DEPTH = 8;
 

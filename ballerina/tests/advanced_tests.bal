@@ -15,8 +15,8 @@
 // under the License.
 
 // Copies, tiers, index tags, snapshots, leases, append and page blobs, blocks, SAS, and the
-// error mapping. The live-only behaviours (undelete, rehydration, user delegation) enable
-// themselves when the run has what they need.
+// error mapping. The live-only behaviours (undelete, the from-URL block operations, user
+// delegation) enable themselves when the run has what they need.
 
 import ballerina/lang.runtime;
 import ballerina/test;
@@ -685,4 +685,38 @@ function testAccountSasTagPermission() returns error? {
     check viaSas->setTags("t.txt", {status: "tagged"});
     map<string> tags = check viaSas->getTags("t.txt");
     test:assertEquals(tags, {status: "tagged"});
+}
+
+@test:Config {}
+function testUploadXmlRequiresXmlFormat() returns error? {
+    Client blobClient = check readyClient("xmlfmt");
+    xml doc = xml `<note>hi</note>`;
+    Error? asJson = blobClient->upload(doc, "note.json");
+    test:assertTrue(asJson is Error && asJson !is ServiceError, "xml content under a .json path is refused");
+    Error? bare = blobClient->upload(doc, "note.txt");
+    test:assertTrue(bare is Error && bare !is ServiceError, "xml content under no format is refused");
+    check blobClient->upload(doc, "note.dat", {fileFormat: XML});
+    xml back = check blobClient->getBlob("note.dat");
+    test:assertEquals(back, doc);
+}
+
+@test:Config {}
+function testCopyBlobOverSas() returns error? {
+    Client blobClient = check readyClient("sascopy");
+    string container = testContainer("sascopy");
+    check blobClient->upload("src", "src.txt");
+    // The service authorizes the copy source separately, so the client's SAS travels with it.
+    string sas = check blobClient.generateContainerSas({
+        expiryTime: time:utcAddSeconds(time:utcNow(), 600),
+        permissions: {read: true, write: true, create: true}
+    });
+    Client viaSas = check newSasContainerClient(container, sas);
+    CopyInfo copied = check viaSas->copyBlob("src.txt", "dst.txt");
+    test:assertTrue(copied.copyId != "");
+    check await(function() returns boolean|error {
+        BlobProperties props = check blobClient->getBlobProperties("dst.txt");
+        return props.copyStatus?.copyStatus == SUCCESS;
+    });
+    string content = check blobClient->getBlob("dst.txt");
+    test:assertEquals(content, "src");
 }
