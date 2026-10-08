@@ -635,8 +635,9 @@ function testStreamUploadsToOnePathDoNotMix() returns error? {
     future<Error?> b = start blobClient->upload(secondSource, "race.bin");
     Error? firstResult = wait a;
     Error? secondResult = wait b;
-    // A commit discards every uncommitted block it does not list, so the second commit is
-    // refused by the service rather than blending the two uploads.
+    // A commit discards every uncommitted block it does not list, so when the two overlap the
+    // second commit is refused by the service rather than blending the two uploads; when they
+    // do not overlap, both commit and the later one is the blob.
     test:assertTrue(firstResult is () || secondResult is (), "one of the uploads must succeed");
     foreach Error? outcome in [firstResult, secondResult] {
         if outcome is Error {
@@ -645,8 +646,13 @@ function testStreamUploadsToOnePathDoNotMix() returns error? {
         }
     }
     byte[] stored = check blobClient->getBlob("race.bin");
-    byte[] expected = firstResult is () ? first : second;
-    test:assertEquals(stored, expected, "the stored content is the winning upload in full");
+    if firstResult is Error {
+        test:assertEquals(stored, second, "the stored content is the winning upload in full");
+    } else if secondResult is Error {
+        test:assertEquals(stored, first, "the stored content is the winning upload in full");
+    } else {
+        test:assertTrue(stored == first || stored == second, "the stored content is one upload in full");
+    }
 }
 
 @test:Config {}
