@@ -89,7 +89,9 @@ public final class SasOps {
                     .setAddPermission(permissions.getBooleanValue(PERMISSION_ADD))
                     .setCreatePermission(permissions.getBooleanValue(PERMISSION_CREATE))
                     .setUpdatePermission(permissions.getBooleanValue(PERMISSION_UPDATE))
-                    .setProcessMessages(permissions.getBooleanValue(PERMISSION_PROCESS));
+                    .setProcessMessages(permissions.getBooleanValue(PERMISSION_PROCESS))
+                    .setTagsPermission(permissions.getBooleanValue(PERMISSION_TAG))
+                    .setFilterTagsPermission(permissions.getBooleanValue(PERMISSION_FILTER));
             BMap<BString, Object> services = record(values.get(SERVICES));
             AccountSasService sasServices = new AccountSasService()
                     .setBlobAccess(services.getBooleanValue(SERVICE_BLOB))

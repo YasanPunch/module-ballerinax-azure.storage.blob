@@ -19,7 +19,9 @@
 package io.ballerina.lib.azure.storage.blob.util;
 
 import io.ballerina.runtime.api.creators.ValueCreator;
+import io.ballerina.runtime.api.types.IntersectionType;
 import io.ballerina.runtime.api.types.Type;
+import io.ballerina.runtime.api.types.TypeTags;
 import io.ballerina.runtime.api.utils.TypeUtils;
 import io.ballerina.runtime.api.utils.XmlUtils;
 import io.ballerina.runtime.api.values.BArray;
@@ -38,8 +40,6 @@ import java.nio.charset.StandardCharsets;
  * parser needs the runtime environment.
  */
 public final class ContentBinder {
-
-    private static final String XML_TYPE_NAME = "xml";
 
     private ContentBinder() {
     }
@@ -81,19 +81,35 @@ public final class ContentBinder {
      */
     public static Object bindXml(BArray content, Type targetType, boolean laxDataBinding,
                                  String bindContext, String parseContext) {
-        if (XML_TYPE_NAME.equals(targetType.getQualifiedName())) {
+        if (TypeTags.isXMLTypeTag(TypeUtils.getImpliedType(targetType).getTag())) {
+            Object document;
             try {
-                return XmlUtils.parse(new String(content.getBytes(), StandardCharsets.UTF_8));
+                document = XmlUtils.parse(new String(content.getBytes(), StandardCharsets.UTF_8));
             } catch (BError e) {
                 throw failure(parseContext, e);
+            }
+            // An XML subtype target (xml:Element, xml<xml:Element>, ...) takes only a document
+            // of that shape; the native return is not checked by the runtime, so it is here.
+            try {
+                return io.ballerina.runtime.api.utils.ValueUtils.convert(document, targetType);
+            } catch (BError e) {
+                throw BlobErrorCreator.clientError(bindContext + ": the document is not a value of the declared "
+                        + "XML type " + targetType, e);
             }
         }
         Object result;
         try {
-            // The xmldata parser does not unwrap type references, so hand it the referred type.
+            // The xmldata parser takes the mutable record type itself, neither a reference nor
+            // a readonly intersection (whose effective type it could not fill); the value is
+            // made readonly afterwards when the target asks for it.
+            Type referred = TypeUtils.getReferredType(targetType);
+            Type recordType = mutableMember(referred);
             result = io.ballerina.lib.data.xmldata.xml.Native.parseBytes(content,
                     DataBindingOptions.xmlSourceOptions(laxDataBinding),
-                    ValueCreator.createTypedescValue(TypeUtils.getReferredType(targetType)));
+                    ValueCreator.createTypedescValue(recordType));
+            if (!(result instanceof BError) && recordType != referred) {
+                result = io.ballerina.runtime.api.utils.ValueUtils.convert(result, targetType);
+            }
         } catch (BError e) {
             throw failure(bindContext, e);
         }
@@ -101,6 +117,19 @@ public final class ContentBinder {
             throw failure(bindContext, bError);
         }
         return result;
+    }
+
+    // The record member of a readonly intersection, or the type itself.
+    private static Type mutableMember(Type type) {
+        if (type instanceof IntersectionType intersection) {
+            for (Type member : intersection.getConstituentTypes()) {
+                Type candidate = TypeUtils.getReferredType(member);
+                if (candidate.getTag() != TypeTags.READONLY_TAG) {
+                    return candidate;
+                }
+            }
+        }
+        return type;
     }
 
     private static BError failure(String context, BError cause) {

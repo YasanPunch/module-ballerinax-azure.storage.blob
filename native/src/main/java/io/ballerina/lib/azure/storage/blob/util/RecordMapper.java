@@ -318,9 +318,9 @@ public final class RecordMapper {
         record.put(BLOB_TYPE, StringUtils.fromString(p.getBlobType().toString()));
         if (p.getAccessTier() != null) {
             record.put(OptionsReader.ACCESS_TIER, StringUtils.fromString(p.getAccessTier().toString()));
-        }
-        if (p.isAccessTierInferred() != null) {
-            record.put(ACCESS_TIER_INFERRED, p.isAccessTierInferred());
+            // The service sends the inferred flag only when it is true, so its absence on a
+            // tiered blob means the tier was set explicitly.
+            record.put(ACCESS_TIER_INFERRED, Boolean.TRUE.equals(p.isAccessTierInferred()));
         }
         if (p.getArchiveStatus() != null) {
             record.put(ARCHIVE_STATUS, StringUtils.fromString(p.getArchiveStatus().toString()));

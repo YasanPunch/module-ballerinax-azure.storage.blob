@@ -237,6 +237,7 @@ public isolated client class Client {
 
     private isolated function stageByteStream(stream<byte[], error?> content, string destinationPath,
             UploadContentOptions? options) returns Error? {
+        string uploadId = newStreamUploadId();
         byte[] buffer = [];
         byte[] carry = [];
         int blockCount = 0;
@@ -260,22 +261,19 @@ public isolated client class Client {
                 carry = bytes.slice(room);
                 bytes = bytes.slice(0, room);
             }
-            if buffer.length() == 0 {
-                buffer = bytes;
-            } else {
-                buffer.push(...bytes);
-            }
+            // Copied, never aliased: a source may hand out readonly chunks, and the buffer grows.
+            buffer.push(...bytes);
             if buffer.length() >= STREAM_BLOCK_BYTES {
-                check stageStreamBlock(self, destinationPath, blockCount, buffer, options);
+                check stageStreamBlock(self, destinationPath, uploadId, blockCount, buffer, options);
                 blockCount += 1;
                 buffer = [];
             }
         }
         if buffer.length() > 0 {
-            check stageStreamBlock(self, destinationPath, blockCount, buffer, options);
+            check stageStreamBlock(self, destinationPath, uploadId, blockCount, buffer, options);
             blockCount += 1;
         }
-        return commitStreamBlocks(self, destinationPath, blockCount, options, ());
+        return commitStreamBlocks(self, destinationPath, uploadId, blockCount, options, ());
     }
 
     // Writes CSV rows as they are pulled: the first record's field names form the header, and
@@ -296,6 +294,7 @@ public isolated client class Client {
 
     private isolated function stageRecordStream(stream<record {}, error?> content, string destinationPath,
             UploadContentOptions? options) returns Error? {
+        string uploadId = newStreamUploadId();
         string[]? header = ();
         string buffer = "";
         int blockCount = 0;
@@ -318,16 +317,16 @@ public isolated client class Client {
             }
             buffer += csvRow(cells(entry.value, columns));
             if buffer.length() >= STREAM_BLOCK_BYTES {
-                check stageStreamBlock(self, destinationPath, blockCount, buffer.toBytes(), options);
+                check stageStreamBlock(self, destinationPath, uploadId, blockCount, buffer.toBytes(), options);
                 blockCount += 1;
                 buffer = "";
             }
         }
         if buffer.length() > 0 {
-            check stageStreamBlock(self, destinationPath, blockCount, buffer.toBytes(), options);
+            check stageStreamBlock(self, destinationPath, uploadId, blockCount, buffer.toBytes(), options);
             blockCount += 1;
         }
-        return commitStreamBlocks(self, destinationPath, blockCount, options, CSV);
+        return commitStreamBlocks(self, destinationPath, uploadId, blockCount, options, CSV);
     }
 
     # Downloads a blob to a local file. Fails if a local file already exists at the destination.

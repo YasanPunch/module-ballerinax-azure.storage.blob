@@ -290,22 +290,17 @@ public final class ClientInit {
         addPortOverride(builder, base);
     }
 
+    // The SDK's parser validates the string: it refuses one it cannot derive a blob endpoint
+    // from, trims the pairs, and resolves the development-storage shorthand. The endpoint it
+    // derived is read back from a first build, so an explicit port (an emulator) keeps the
+    // same port policy as an explicit serviceUrl.
     private static void configureConnectionString(BlobServiceClientBuilder builder, BMap<BString, Object> auth) {
         String connectionString = requireNonEmpty(auth, CONNECTION_STRING);
-        if (!connectionString.contains("BlobEndpoint=") && !connectionString.contains("AccountName=")) {
-            throw BlobErrorCreator.clientError(
-                    "the connection string must include BlobEndpoint= or AccountName= so the blob-service "
-                            + "endpoint can be derived", null);
-        }
         try {
             builder.connectionString(connectionString);
-        } catch (IllegalArgumentException e) {
+            addPortOverride(builder, builder.buildClient().getAccountUrl());
+        } catch (IllegalArgumentException | IllegalStateException e) {
             throw BlobErrorCreator.clientError("invalid connection string: " + BallerinaAzureClient.describe(e), e);
-        }
-        for (String pair : connectionString.split(";")) {
-            if (pair.startsWith("BlobEndpoint=")) {
-                addPortOverride(builder, pair.substring("BlobEndpoint=".length()));
-            }
         }
     }
 

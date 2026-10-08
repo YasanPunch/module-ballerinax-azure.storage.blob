@@ -483,9 +483,20 @@ function testUndeleteBlobAndContainer() returns error? {
     check admin->deleteContainer(container);
     ContainerList listed = check admin->listContainers({prefix: container, includeDeleted: true});
     if listed.containers.length() == 1 && listed.containers[0].deletedVersion is string {
-        check admin->undeleteContainer(container, listed.containers[0].deletedVersion ?: "");
-        boolean restored = check admin->hasContainer(container);
-        test:assertTrue(restored);
+        string deletedVersion = listed.containers[0].deletedVersion ?: "";
+        // The deletion completes asynchronously; until it does, a restore answers
+        // ContainerBeingDeleted, so the restore is retried for a while.
+        check await(function() returns boolean|error {
+            Error? restored = admin->undeleteContainer(container, deletedVersion);
+            if restored is ConflictError && restored.detail().errorCode == "ContainerBeingDeleted" {
+                return false;
+            }
+            return restored is () ? true : restored;
+        }, timeoutSeconds = 120, intervalSeconds = 5);
+        check await(function() returns boolean|error {
+            boolean restored = check admin->hasContainer(container);
+            return restored;
+        }, timeoutSeconds = 60);
     }
 }
 
@@ -542,3 +553,130 @@ function awaitCopy(Client blobClient, string path) returns BlobProperties|error 
 isolated function serviceUrl() returns string => liveRun
     ? string `https://${liveAccountName}.blob.core.windows.net`
     : AZURITE_URL;
+
+// ---------------------------------------------------------------------------
+// Review round 1: typed-read target shapes, stream upload isolation, account SAS tags
+// ---------------------------------------------------------------------------
+
+type Author record {|
+    string name;
+    int books;
+|};
+
+@test:Config {}
+function testGetBlobXmlSubtypeTargets() returns error? {
+    Client blobClient = check readyClient("xmlsub");
+    check blobClient->upload("<author><name>Ann</name><books>3</books></author>", "a.xml");
+    xml:Element element = check blobClient->getBlob("a.xml");
+    test:assertEquals(element.getName(), "author");
+    xml<xml:Element> elements = check blobClient->getBlob("a.xml");
+    test:assertEquals(elements.length(), 1);
+    // A document that is not one element (a leading comment) is refused for an element target.
+    check blobClient->upload("<!-- c --><author/>", "c.xml");
+    xml:Element|Error refused = blobClient->getBlob("c.xml");
+    test:assertTrue(refused is Error && refused !is ServiceError, "a comment-led document is not an xml:Element");
+    xml whole = check blobClient->getBlob("c.xml");
+    test:assertEquals(whole.length(), 2, "the plain xml target takes the whole document");
+}
+
+@test:Config {}
+function testGetBlobReadonlyIntersectionTargets() returns error? {
+    Client blobClient = check readyClient("readonly");
+    Author ann = {name: "Ann", books: 3};
+    check blobClient->upload(ann, "a.json");
+    check blobClient->upload("<author><name>Ann</name><books>3</books></author>", "a.xml");
+    check blobClient->upload("name,books\nAnn,3\nBob,1\n", "a.csv");
+    Author & readonly fromJson = check blobClient->getBlob("a.json");
+    test:assertEquals(fromJson, ann);
+    test:assertTrue(fromJson is readonly);
+    Author & readonly fromXml = check blobClient->getBlob("a.xml");
+    test:assertEquals(fromXml, ann);
+    (Author & readonly)[] fromCsv = check blobClient->getBlob("a.csv");
+    test:assertEquals(fromCsv.length(), 2);
+    test:assertEquals(fromCsv[1].name, "Bob");
+    test:assertTrue(fromCsv[0] is readonly);
+    stream<Author & readonly, error?> rows = check blobClient->getBlob("a.csv");
+    (Author & readonly)[] pulled = check from Author & readonly row in rows select row;
+    test:assertEquals(pulled.length(), 2);
+}
+
+@test:Config {}
+function testGetBlobUnionTargets() returns error? {
+    Client blobClient = check readyClient("unions");
+    Author ann = {name: "Ann", books: 3};
+    check blobClient->upload(ann, "a.json");
+    check blobClient->upload("name,books\nAnn,3\n", "a.csv");
+    Author|Metric fromJson = check blobClient->getBlob("a.json");
+    test:assertEquals(fromJson, ann);
+    json|() maybe = check blobClient->getBlob("a.json");
+    test:assertEquals(maybe, {name: "Ann", books: 3});
+    // A union target has no CSV or XML binding.
+    string|Author|Error refused = blobClient->getBlob("a.csv");
+    test:assertTrue(refused is Error && refused !is ServiceError, "a union target binds from JSON only");
+    if refused is Error {
+        test:assertTrue(refused.message().includes("union"), refused.message());
+    }
+}
+
+@test:Config {}
+function testStreamUploadsToOnePathDoNotMix() returns error? {
+    Client blobClient = check readyClient("race");
+    // Two uploads to one path, each spanning two blocks, run at the same time; the blob must
+    // end up as one of them whole, never as blocks of both.
+    byte[] first = [];
+    byte[] second = [];
+    foreach int i in 0 ..< (STREAM_BLOCK_BYTES + 1000) {
+        first.push(<byte>(i % 251));
+        second.push(<byte>(i % 241));
+    }
+    stream<byte[], error?> firstSource = [first.slice(0, STREAM_BLOCK_BYTES), first.slice(STREAM_BLOCK_BYTES)].toStream();
+    stream<byte[], error?> secondSource = [second.slice(0, STREAM_BLOCK_BYTES), second.slice(STREAM_BLOCK_BYTES)].toStream();
+    future<Error?> a = start blobClient->upload(firstSource, "race.bin");
+    future<Error?> b = start blobClient->upload(secondSource, "race.bin");
+    Error? firstResult = wait a;
+    Error? secondResult = wait b;
+    // A commit discards every uncommitted block it does not list, so the second commit is
+    // refused by the service rather than blending the two uploads.
+    test:assertTrue(firstResult is () || secondResult is (), "one of the uploads must succeed");
+    foreach Error? outcome in [firstResult, secondResult] {
+        if outcome is Error {
+            test:assertTrue(outcome is ServiceError && outcome.detail().errorCode == "InvalidBlockList",
+                    "the losing upload fails with InvalidBlockList: " + outcome.message());
+        }
+    }
+    byte[] stored = check blobClient->getBlob("race.bin");
+    byte[] expected = firstResult is () ? first : second;
+    test:assertEquals(stored, expected, "the stored content is the winning upload in full");
+}
+
+@test:Config {}
+function testStreamUploadAcceptsReadonlyChunks() returns error? {
+    Client blobClient = check readyClient("rochunks");
+    byte[] first = [1, 2, 3];
+    byte[] second = [4, 5, 6];
+    readonly & byte[] head = first.cloneReadOnly();
+    readonly & byte[] tail = second.cloneReadOnly();
+    stream<readonly & byte[], error?> chunks = [head, tail].toStream();
+    check blobClient->upload(chunks, "ro.bin");
+    byte[] stored = check blobClient->getBlob("ro.bin");
+    test:assertEquals(stored, [1, 2, 3, 4, 5, 6]);
+}
+
+@test:Config {}
+function testAccountSasTagPermission() returns error? {
+    Client blobClient = check readyClient("sastags");
+    string container = testContainer("sastags");
+    check blobClient->upload("t", "t.txt");
+    AdminClient admin = check newAdmin();
+    string tagging = check admin.generateAccountSas({
+        expiryTime: time:utcAddSeconds(time:utcNow(), 600),
+        permissions: {read: true, write: true, tag: true, filter: true},
+        services: {blob: true},
+        resourceTypes: {container: true, 'object: true}
+    });
+    test:assertTrue(tagging.includes("sp="), tagging);
+    Client viaSas = check newSasContainerClient(container, tagging);
+    check viaSas->setTags("t.txt", {status: "tagged"});
+    map<string> tags = check viaSas->getTags("t.txt");
+    test:assertEquals(tags, {status: "tagged"});
+}

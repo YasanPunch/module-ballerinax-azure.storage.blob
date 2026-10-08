@@ -99,8 +99,10 @@ function testContainerLifecycle() returns error? {
     test:assertFalse(listed.hasKey("nextMarker"));
 
     check admin->deleteContainer(container);
-    Error? missing = admin->deleteContainer(container);
-    test:assertTrue(missing is NotFoundError);
+    // A never-created name: the service deletes asynchronously, so deleting the same container
+    // again races the first deletion and may be accepted, conflict, or be not found.
+    Error? missing = admin->deleteContainer(testContainer("lifecycle-absent"));
+    test:assertTrue(missing is NotFoundError, "deleting a container that does not exist must be NotFoundError");
 }
 
 @test:Config {}
@@ -528,4 +530,33 @@ function readyClient(string base) returns Client|error {
     string container = testContainer(base);
     check createTestContainer(admin, container);
     return newContainerClient(container);
+}
+
+// ---------------------------------------------------------------------------
+// Connection strings: the SDK's parser decides, including the development shorthand
+// ---------------------------------------------------------------------------
+
+@test:Config {}
+function testConnectionStringForms() returns error? {
+    // Whitespace around the pairs is the SDK's to trim.
+    SharedKeyConfig key = sharedKeyAuth();
+    string padded = liveRun
+        ? string `DefaultEndpointsProtocol=https; AccountName=${key.accountName}; AccountKey=${key.accountKey}; EndpointSuffix=core.windows.net`
+        : string `DefaultEndpointsProtocol=http; AccountName=${key.accountName}; AccountKey=${key.accountKey}; BlobEndpoint=${AZURITE_URL}`;
+    AdminClient admin = check new (auth = {connectionString: padded});
+    boolean absent = check admin->hasContainer(testContainer("never-created"));
+    test:assertFalse(absent);
+
+    // A string the SDK cannot derive a blob endpoint from fails at init, before any call.
+    AdminClient|Error queueOnly = new (auth = {connectionString: "QueueEndpoint=https://acct.queue.core.windows.net;SharedAccessSignature=sv=2024-11-04&sig=abc"});
+    test:assertTrue(queueOnly is Error && queueOnly !is ServiceError, "a queue-only connection string must fail at init");
+    AdminClient|Error garbage = new (auth = {connectionString: "not a connection string"});
+    test:assertTrue(garbage is Error && garbage !is ServiceError);
+
+    // The development storage shorthand resolves to the emulator's endpoints, port included.
+    if !liveRun {
+        AdminClient dev = check new (auth = {connectionString: "UseDevelopmentStorage=true"});
+        boolean devAbsent = check dev->hasContainer(testContainer("never-created"));
+        test:assertFalse(devAbsent);
+    }
 }
