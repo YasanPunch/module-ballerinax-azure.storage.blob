@@ -28,6 +28,7 @@ import io.ballerina.lib.azure.storage.blob.util.OptionsReader;
 import io.ballerina.lib.azure.storage.blob.util.RecordMapper;
 import io.ballerina.lib.azure.storage.blob.util.ValueUtils;
 import io.ballerina.runtime.api.Environment;
+import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
@@ -203,7 +204,7 @@ public final class TagOps {
         return current;
     }
 
-    private static RuntimeException invalidQuery(String detail) {
+    private static BError invalidQuery(String detail) {
         return BlobErrorCreator.clientError("invalid tag query: " + detail
                 + ". Expected \"key\" op 'value' comparisons joined by " + AND.toUpperCase(Locale.ROOT), null);
     }
