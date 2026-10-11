@@ -80,7 +80,7 @@ task commitTomlFiles {
     def execHelper = project.objects.newInstance(BallerinaExecHelper)
     doLast {
         execHelper.execOperations.exec {
-            ignoreExitValue true
+            ignoreExitValue = true
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                 commandLine 'cmd', '/c', "git commit -m \"[Automated] Update the toml files\" Ballerina.toml Dependencies.toml CompilerPlugin.toml"
             } else {
