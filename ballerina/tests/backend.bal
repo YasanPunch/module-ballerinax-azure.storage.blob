@@ -56,7 +56,9 @@ final string containerPrefix = buildContainerPrefix();
 
 isolated function buildContainerPrefix() returns string {
     string runId = os:getEnv("GITHUB_RUN_ID");
-    string tag = runId != "" ? runId : time:utcNow()[0].toString();
+    // A re-run keeps the run id; the attempt number tells the two apart.
+    string attempt = os:getEnv("GITHUB_RUN_ATTEMPT");
+    string tag = runId != "" ? (attempt != "" ? string `${runId}-${attempt}` : runId) : time:utcNow()[0].toString();
     return string `azbt-${tag}`;
 }
 

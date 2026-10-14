@@ -129,7 +129,7 @@ public final class ClientInit {
     }
 
     // A SAS signs the request alone; a copy source in the same account must carry it too, so
-    // the query of a SAS credential is kept for the copy operations.
+    // the query of a SAS credential is kept for the copy operations, whichever form carries it.
     @SuppressWarnings("unchecked")
     private static void storeSasSignature(BObject self, BMap<BString, Object> config) {
         BMap<BString, Object> auth = (BMap<BString, Object>) config.getMapValue(AUTH);
@@ -138,6 +138,8 @@ public final class ClientInit {
             signature = requireNonEmpty(auth, SAS_TOKEN);
         } else if (auth.containsKey(SAS_URL)) {
             signature = URI.create(requireNonEmpty(auth, SAS_URL)).getRawQuery();
+        } else if (auth.containsKey(CONNECTION_STRING)) {
+            signature = connectionStringSas(requireNonEmpty(auth, CONNECTION_STRING));
         }
         if (signature != null) {
             self.addNativeData(BallerinaAzureClient.NATIVE_SAS_SIGNATURE,
@@ -330,6 +332,18 @@ public final class ClientInit {
         } catch (IllegalArgumentException | IllegalStateException e) {
             throw BlobErrorCreator.clientError("invalid connection string: " + BallerinaAzureClient.describe(e), e);
         }
+    }
+
+    // The SAS pair of a connection string, split the way the SDK's own parser splits it.
+    private static String connectionStringSas(String connectionString) {
+        for (String pair : connectionString.split(";")) {
+            int separator = pair.indexOf('=');
+            if (separator > 0 && pair.substring(0, separator).strip().equalsIgnoreCase("SharedAccessSignature")) {
+                String value = pair.substring(separator + 1).strip();
+                return value.isEmpty() ? null : value;
+            }
+        }
+        return null;
     }
 
     private static String requireNonEmpty(BMap<BString, Object> record, BString field) {

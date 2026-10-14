@@ -579,6 +579,20 @@ function testGetBlobXmlSubtypeTargets() returns error? {
     test:assertEquals(whole.length(), 2, "the plain xml target takes the whole document");
 }
 
+// Invalid UTF-8 is a client error for the text and XML targets alike; a replacement character
+// must never pass as content.
+@test:Config {}
+function testInvalidUtf8IsRefusedByTextAndXmlReads() returns error? {
+    Client blobClient = check readyClient("utf8");
+    byte[] malformed = [0x3C, 0x61, 0x3E, 0xC3, 0x28, 0x3C, 0x2F, 0x61, 0x3E];
+    check blobClient->upload(malformed, "bad.xml");
+    string|Error text = blobClient->getBlob("bad.xml");
+    test:assertTrue(text is Error && text !is ServiceError, "malformed UTF-8 is refused as text, got " + describe(text));
+    xml|Error document = blobClient->getBlob("bad.xml");
+    test:assertTrue(document is Error && document !is ServiceError,
+            "malformed UTF-8 is refused as XML, got " + describe(document));
+}
+
 @test:Config {}
 function testGetBlobReadonlyIntersectionTargets() returns error? {
     Client blobClient = check readyClient("readonly");

@@ -20,6 +20,7 @@
 import ballerina/file;
 import ballerina/io;
 import ballerina/test;
+import ballerina/time;
 
 type Metric record {
     string quarter;
@@ -253,6 +254,11 @@ function testUploadReplacesAndGetBlobBinds() returns error? {
     check blobClient->upload("hello again".toBytes(), "/docs/greeting.txt");
     text = check blobClient->getBlob("docs/greeting.txt");
     test:assertEquals(text, "hello again");
+
+    // Blanks are part of a blob name and survive the round trip.
+    check blobClient->upload("padded", " docs/ padded .txt ");
+    text = check blobClient->getBlob(" docs/ padded .txt ");
+    test:assertEquals(text, "padded");
 
     BlobProperties properties = check blobClient->getBlobProperties("docs/greeting.txt");
     test:assertEquals(properties.contentLength, 11);
@@ -554,6 +560,24 @@ function testConnectionStringForms() returns error? {
     // A string the SDK cannot derive a blob endpoint from fails at init, before any call.
     AdminClient|Error queueOnly = new (auth = {connectionString: "QueueEndpoint=https://acct.queue.core.windows.net;SharedAccessSignature=sv=2024-11-04&sig=abc"});
     test:assertTrue(queueOnly is Error && queueOnly !is ServiceError, "a queue-only connection string must fail at init");
+
+    // A SAS carried by the connection string signs copy sources too.
+    Client blobClient = check readyClient("cs-sas");
+    string container = testContainer("cs-sas");
+    check blobClient->upload("original", "src.txt");
+    string containerSas = check blobClient.generateContainerSas({
+        expiryTime: time:utcAddSeconds(time:utcNow(), 600),
+        permissions: {read: true, write: true, create: true},
+        protocol: HTTPS_HTTP
+    });
+    string endpoint = liveRun ? string `https://${key.accountName}.blob.core.windows.net` : AZURITE_URL;
+    Client viaConnectionString = check new (container, auth = {
+        connectionString: string `BlobEndpoint=${endpoint};SharedAccessSignature=${containerSas}`
+    });
+    _ = check viaConnectionString->copyBlob("src.txt", "dst.txt");
+    _ = check awaitCopy(viaConnectionString, "dst.txt");
+    string copied = check viaConnectionString->getBlob("dst.txt");
+    test:assertEquals(copied, "original");
     AdminClient|Error garbage = new (auth = {connectionString: "not a connection string"});
     test:assertTrue(garbage is Error && garbage !is ServiceError);
 

@@ -18,8 +18,11 @@
 
 package io.ballerina.lib.azure.storage.blob.client;
 
+import com.azure.core.http.HttpHeaderName;
+import com.azure.core.http.rest.Response;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobContainerAccessPolicies;
+import com.azure.storage.blob.models.BlobRequestConditions;
 import io.ballerina.lib.azure.storage.blob.util.BallerinaAzureClient;
 import io.ballerina.lib.azure.storage.blob.util.BlobErrorCreator;
 import io.ballerina.lib.azure.storage.blob.util.OptionsReader;
@@ -31,10 +34,16 @@ import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BObject;
 import io.ballerina.runtime.api.values.BString;
 
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
  * Native implementations of the bound container's own operations: properties, metadata, and
  * the access policy. The wire sets the anonymous access level and the stored access policies
- * together, so each setter reads the current half it does not change and resends both.
+ * together, so each setter reads the current half it does not change and resends both. The
+ * write is conditioned on the container being unmodified since that read (the service offers
+ * no ETag condition on container operations), so a concurrent change surfaces as a
+ * precondition failure instead of being overwritten.
  */
 public final class ContainerOps {
 
@@ -70,9 +79,11 @@ public final class ContainerOps {
     public static Object setPublicAccess(Environment env, BObject self, BString access, Object options) {
         return BallerinaAzureClient.invoke(env, () -> {
             BlobContainerClient container = BallerinaAzureClient.getContainerClient(self);
-            BlobContainerAccessPolicies current = container.getAccessPolicy();
-            container.setAccessPolicyWithResponse(OptionsReader.publicAccess(access), current.getIdentifiers(),
-                    OptionsReader.leaseConditions(options), null, null);
+            BlobRequestConditions conditions = writeConditions(options);
+            Response<BlobContainerAccessPolicies> current =
+                    container.getAccessPolicyWithResponse(conditions.getLeaseId(), null, null);
+            container.setAccessPolicyWithResponse(OptionsReader.publicAccess(access),
+                    current.getValue().getIdentifiers(), unmodifiedSince(conditions, current), null, null);
             return null;
         });
     }
@@ -85,10 +96,27 @@ public final class ContainerOps {
                         "a container holds at most " + MAX_SIGNED_IDENTIFIERS + " stored access policies", null);
             }
             BlobContainerClient container = BallerinaAzureClient.getContainerClient(self);
-            BlobContainerAccessPolicies current = container.getAccessPolicy();
-            container.setAccessPolicyWithResponse(current.getBlobAccessType(),
-                    OptionsReader.signedIdentifiers(identifiers), OptionsReader.leaseConditions(options), null, null);
+            BlobRequestConditions conditions = writeConditions(options);
+            Response<BlobContainerAccessPolicies> current =
+                    container.getAccessPolicyWithResponse(conditions.getLeaseId(), null, null);
+            container.setAccessPolicyWithResponse(current.getValue().getBlobAccessType(),
+                    OptionsReader.signedIdentifiers(identifiers), unmodifiedSince(conditions, current), null, null);
             return null;
         });
+    }
+
+    private static BlobRequestConditions writeConditions(Object options) {
+        BlobRequestConditions conditions = OptionsReader.leaseConditions(options);
+        return conditions == null ? new BlobRequestConditions() : conditions;
+    }
+
+    // Conditions the write on the Last-Modified the read reported; absent (an emulator that
+    // omits the header), the write goes unconditioned as before.
+    private static BlobRequestConditions unmodifiedSince(BlobRequestConditions conditions, Response<?> read) {
+        String lastModified = read.getHeaders().getValue(HttpHeaderName.LAST_MODIFIED);
+        if (lastModified != null) {
+            conditions.setIfUnmodifiedSince(OffsetDateTime.parse(lastModified, DateTimeFormatter.RFC_1123_DATE_TIME));
+        }
+        return conditions;
     }
 }

@@ -116,14 +116,14 @@ public final class BallerinaAzureClient {
     }
 
     /**
-     * Normalizes a container-relative blob path for the SDK: strips a leading slash and
-     * rejects an empty result.
+     * Normalizes a container-relative blob path for the SDK: removes leading slashes and
+     * rejects an empty result. Everything else, blanks included, is part of the blob name.
      *
      * @param path the slash-delimited blob path
      * @return the blob name the wire carries, without a leading slash
      */
     public static String blobPath(BString path) {
-        String p = path.getValue().strip();
+        String p = path.getValue();
         while (p.startsWith("/")) {
             p = p.substring(1);
         }

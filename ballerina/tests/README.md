@@ -47,7 +47,7 @@ The credential values can also be supplied as environment variables: `LIVE_ACCOU
 
 ### Container naming, cost, and cleanup
 
-Each test creates its own container under a per-run prefix, `azbt-<run id>-` on GitHub Actions or `azbt-<epoch seconds>-` locally, so reruns never collide with leftovers from an interrupted run. Containers are swept at suite end by prefix. With container soft delete enabled the deleted containers sit in the retention window at negligible cost for test-sized data. Containers abandoned by a crashed run keep their run's prefix and can be listed for manual sweeping:
+Each test creates its own container under a per-run prefix, `azbt-<run id>-<attempt>-` on GitHub Actions or `azbt-<epoch seconds>-` locally, so reruns never collide with leftovers from an interrupted run. Containers are swept at suite end by prefix. With container soft delete enabled the deleted containers sit in the retention window at negligible cost for test-sized data. Containers abandoned by a crashed run keep their run's prefix and can be listed for manual sweeping:
 
 ```sh
 az storage container list --account-name <account-name> --prefix azbt- --include-deleted

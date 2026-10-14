@@ -29,6 +29,8 @@ import io.ballerina.runtime.api.values.BError;
 import io.ballerina.runtime.api.values.BMap;
 import io.ballerina.runtime.api.values.BString;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -84,7 +86,13 @@ public final class ContentBinder {
         if (TypeTags.isXMLTypeTag(TypeUtils.getImpliedType(targetType).getTag())) {
             Object document;
             try {
-                document = XmlUtils.parse(new String(content.getBytes(), StandardCharsets.UTF_8));
+                // A strict decode: malformed bytes are a client error, never a replacement character.
+                String text = StandardCharsets.UTF_8.newDecoder()
+                        .decode(ByteBuffer.wrap(content.getBytes())).toString();
+                document = XmlUtils.parse(text);
+            } catch (CharacterCodingException e) {
+                throw BlobErrorCreator.clientError(parseContext + ": the content is not valid UTF-8 text: "
+                        + BallerinaAzureClient.describe(e), e);
             } catch (BError e) {
                 throw failure(parseContext, e);
             }
