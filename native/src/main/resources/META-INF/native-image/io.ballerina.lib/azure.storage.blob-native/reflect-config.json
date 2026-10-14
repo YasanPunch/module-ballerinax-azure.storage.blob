@@ -47,30 +47,10 @@
     "allDeclaredConstructors": true
   },
   {
-    "name": "com.azure.core.http.netty.implementation.AzureSdkHandler",
-    "methods": [
-      {
-        "name": "channelRead",
-        "parameterTypes": [
-          "io.netty.channel.ChannelHandlerContext",
-          "java.lang.Object"
-        ]
-      },
-      {
-        "name": "channelReadComplete",
-        "parameterTypes": [
-          "io.netty.channel.ChannelHandlerContext"
-        ]
-      },
-      {
-        "name": "write",
-        "parameterTypes": [
-          "io.netty.channel.ChannelHandlerContext",
-          "java.lang.Object",
-          "io.netty.channel.ChannelPromise"
-        ]
-      }
-    ]
+    "name": "com.azure.core.http.jdk.httpclient.JdkHttpClientProvider",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "queryAllDeclaredConstructors": true
   },
   {
     "name": "com.azure.core.http.rest.ResponseBase",

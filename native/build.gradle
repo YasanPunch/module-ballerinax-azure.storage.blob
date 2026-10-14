@@ -49,8 +49,15 @@ dependencies {
     implementation group: 'org.ballerinalang', name: 'ballerina-lang', version: "${ballerinaLangVersion}"
     implementation group: 'org.ballerinalang', name: 'ballerina-runtime', version: "${ballerinaLangVersion}"
 
-    implementation group: 'com.azure', name: 'azure-storage-blob', version: "${azureStorageBlobVersion}"
-    implementation group: 'com.azure', name: 'azure-identity', version: "${azureIdentityVersion}"
+    // The storage and identity artifacts declare the Netty transport; the connector runs on the
+    // JDK HttpClient transport instead, so no Netty jar reaches the platform jar list.
+    implementation(group: 'com.azure', name: 'azure-storage-blob', version: "${azureStorageBlobVersion}") {
+        exclude group: 'com.azure', module: 'azure-core-http-netty'
+    }
+    implementation(group: 'com.azure', name: 'azure-identity', version: "${azureIdentityVersion}") {
+        exclude group: 'com.azure', module: 'azure-core-http-netty'
+    }
+    implementation group: 'com.azure', name: 'azure-core-http-jdk-httpclient', version: "${azureCoreHttpJdkHttpClientVersion}"
     implementation group: 'org.slf4j', name: 'slf4j-api', version: "${slf4jVersion}"
     implementation group: 'io.ballerina.lib', name: 'data.jsondata-native', version: "${stdlibDataJsonDataVersion}"
     implementation group: 'io.ballerina.lib', name: 'data.xmldata-native', version: "${stdlibDataXmlDataVersion}"

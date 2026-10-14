@@ -21,6 +21,7 @@ package io.ballerina.lib.azure.storage.blob.client;
 import com.azure.core.credential.AzureNamedKeyCredential;
 import com.azure.core.credential.AzureSasCredential;
 import com.azure.core.credential.TokenCredential;
+import com.azure.core.http.HttpClient;
 import com.azure.core.http.policy.HttpPipelinePolicy;
 import com.azure.core.util.UrlBuilder;
 import com.azure.identity.ClientCertificateCredentialBuilder;
@@ -159,8 +160,10 @@ public final class ClientInit {
         if (retryConfig != null) {
             builder.retryOptions(TransportConfigMapper.retryOptions((BMap<BString, Object>) retryConfig));
         }
-        // transportConfig is defaulted on the record, so the connector's pool values always apply.
-        builder.httpClient(TransportConfigMapper.httpClient((BMap<BString, Object>) config.get(TRANSPORT_CONFIG)));
+        // transportConfig is defaulted on the record, so the connector's timeouts always apply. The
+        // same client carries the Entra token requests, so they share the proxy and TLS settings.
+        HttpClient httpClient = TransportConfigMapper.httpClient((BMap<BString, Object>) config.get(TRANSPORT_CONFIG));
+        builder.httpClient(httpClient);
         if (auth.containsKey(ACCOUNT_KEY)) {
             configureSharedKey(builder, auth);
         } else if (auth.containsKey(SAS_TOKEN)) {
@@ -170,7 +173,7 @@ public final class ClientInit {
         } else if (auth.containsKey(CONNECTION_STRING)) {
             configureConnectionString(builder, auth);
         } else {
-            configureEntra(builder, auth);
+            configureEntra(builder, auth, httpClient);
         }
         try {
             return builder.buildClient();
@@ -234,10 +237,12 @@ public final class ClientInit {
      * secret, a certificate path, or a token file path names its credential outright; otherwise
      * the `kind` discriminator separates the default chain from a managed identity.
      */
-    private static void configureEntra(BlobServiceClientBuilder builder, BMap<BString, Object> auth) {
+    private static void configureEntra(BlobServiceClientBuilder builder, BMap<BString, Object> auth,
+                                       HttpClient httpClient) {
         TokenCredential credential;
         if (auth.containsKey(CLIENT_SECRET)) {
             credential = new ClientSecretCredentialBuilder()
+                    .httpClient(httpClient)
                     .tenantId(requireNonEmpty(auth, TENANT_ID))
                     .clientId(requireNonEmpty(auth, CLIENT_ID))
                     .clientSecret(requireNonEmpty(auth, CLIENT_SECRET))
@@ -249,6 +254,7 @@ public final class ClientInit {
                         "certificatePath does not point to a readable file: " + certificatePath, null);
             }
             ClientCertificateCredentialBuilder certificateBuilder = new ClientCertificateCredentialBuilder()
+                    .httpClient(httpClient)
                     .tenantId(requireNonEmpty(auth, TENANT_ID))
                     .clientId(requireNonEmpty(auth, CLIENT_ID));
             String certificatePassword = ValueUtils.optString(auth, CERTIFICATE_PASSWORD);
@@ -258,19 +264,22 @@ public final class ClientInit {
                     .build();
         } else if (auth.containsKey(TOKEN_FILE_PATH)) {
             credential = new WorkloadIdentityCredentialBuilder()
+                    .httpClient(httpClient)
                     .tenantId(requireNonEmpty(auth, TENANT_ID))
                     .clientId(requireNonEmpty(auth, CLIENT_ID))
                     .tokenFilePath(requireNonEmpty(auth, TOKEN_FILE_PATH))
                     .build();
         } else if (KIND_MANAGED_IDENTITY.equals(ValueUtils.optString(auth, KIND))) {
-            ManagedIdentityCredentialBuilder managedBuilder = new ManagedIdentityCredentialBuilder();
+            ManagedIdentityCredentialBuilder managedBuilder = new ManagedIdentityCredentialBuilder()
+                    .httpClient(httpClient);
             String clientId = ValueUtils.optString(auth, CLIENT_ID);
             if (clientId != null) {
                 managedBuilder.clientId(clientId);
             }
             credential = managedBuilder.build();
         } else {
-            DefaultAzureCredentialBuilder chainBuilder = new DefaultAzureCredentialBuilder();
+            DefaultAzureCredentialBuilder chainBuilder = new DefaultAzureCredentialBuilder()
+                    .httpClient(httpClient);
             String clientId = ValueUtils.optString(auth, CLIENT_ID);
             if (clientId != null) {
                 chainBuilder.managedIdentityClientId(clientId);

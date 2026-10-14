@@ -43,8 +43,8 @@ version = "1.58.1"
 
 [[platform.java21.dependency]]
 groupId = "com.azure"
-artifactId = "azure-core-http-netty"
-version = "1.16.5"
+artifactId = "azure-core-http-jdk-httpclient"
+version = "1.1.5"
 
 [[platform.java21.dependency]]
 groupId = "com.azure"
@@ -134,98 +134,3 @@ version = "3.7.18"
 groupId = "org.reactivestreams"
 artifactId = "reactive-streams"
 version = "1.0.4"
-
-[[platform.java21.dependency]]
-groupId = "io.projectreactor.netty"
-artifactId = "reactor-netty-http"
-version = "1.2.18"
-
-[[platform.java21.dependency]]
-groupId = "io.projectreactor.netty"
-artifactId = "reactor-netty-core"
-version = "1.2.18"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-common"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-buffer"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-codec"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-codec-dns"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-codec-http"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-codec-http2"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-codec-socks"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-handler"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-handler-proxy"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-resolver"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-resolver-dns"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-resolver-dns-classes-macos"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-transport"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-transport-classes-epoll"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-transport-classes-kqueue"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-transport-native-unix-common"
-version = "4.1.135.Final"
-
-[[platform.java21.dependency]]
-groupId = "io.netty"
-artifactId = "netty-tcnative-classes"
-version = "2.0.78.Final"
