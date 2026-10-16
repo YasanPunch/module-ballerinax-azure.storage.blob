@@ -146,6 +146,16 @@ public enum RetryPolicyType {
     FIXED_INTERVAL = "fixed"
 }
 
+# The proxy protocol.
+public enum ProxyType {
+    # An HTTP proxy
+    HTTP,
+    # A SOCKS4 proxy
+    SOCKS4,
+    # A SOCKS5 proxy
+    SOCKS5
+}
+
 # Retry behaviour for service requests. Omit the record to keep the connector's defaults.
 public type RetryConfig record {|
     # How the delay between tries grows
@@ -174,7 +184,7 @@ public type CertStore record {|
 public type CertKey record {|
     # Path to the client certificate file
     string certFile;
-    # Path to the client private key file, in PKCS#8 form (plain or encrypted)
+    # Path to the client private key file
     string keyFile;
     # The password protecting the private key, when it is encrypted
     string keyPassword?;
@@ -191,17 +201,24 @@ public type SecureSocket record {|
     string[] protocolVersions?;
     # The cipher suites offered during the handshake
     string[] ciphers?;
+    # Whether the server's host name is verified against its certificate
+    boolean verifyHostName = true;
+    # Whether TLS sessions may be resumed
+    boolean sessionResumption?;
     # Whether the server certificate's revocation status is checked
     boolean validateRevocation?;
-    # The Server Name Indication host name sent during the handshake when the endpoint is an IP
-    # address; for a host name endpoint, that host name is sent
+    # The Server Name Indication host name sent during the handshake
     string sniHostName?;
+    # The TLS handshake timeout, in seconds
+    decimal handshakeTimeoutSeconds?;
     # The TLS session timeout, in seconds
     decimal sessionTimeoutSeconds?;
 |};
 
-# Settings of the HTTP proxy the connector's traffic goes through.
+# Proxy settings for the connector's traffic.
 public type ProxyConfig record {|
+    # The proxy protocol
+    ProxyType proxyType = HTTP;
     # The proxy host name or address
     string host;
     # The proxy port
@@ -214,19 +231,23 @@ public type ProxyConfig record {|
     string[] nonProxyHosts?;
 |};
 
-# Connection timeouts for the connector's HTTP transport.
+# Connection-pool settings for the connector's HTTP transport.
 public type ConnectionPoolConfig record {|
+    # The maximum number of concurrent connections
+    int maxConnections = 50;
+    # How long an idle connection is kept before being closed, in seconds
+    decimal idleTimeoutSeconds = 60;
     # The timeout for establishing a connection, in seconds
     decimal connectTimeoutSeconds = 10;
     # The timeout for reading a response, in seconds
     decimal readTimeoutSeconds = 60;
 |};
 
-# HTTP transport settings: proxying, connection timeouts, and TLS.
+# HTTP transport settings: proxying, connection pooling, and TLS.
 public type TransportConfig record {|
     # Route traffic through this proxy
     ProxyConfig proxy?;
-    # Connection timeouts
+    # Connection-pool tuning
     ConnectionPoolConfig connectionPool = {};
     # Custom TLS settings (trust and key material, verification)
     SecureSocket secureSocket?;
@@ -238,7 +259,7 @@ public type ClientConfiguration record {|
     AuthConfig auth;
     # Retry behaviour for service requests; omit for the service defaults
     RetryConfig retryConfig?;
-    # HTTP transport settings (proxy, timeouts, TLS)
+    # HTTP transport settings (proxy, connection pool, TLS)
     TransportConfig transportConfig = {};
 |};
 

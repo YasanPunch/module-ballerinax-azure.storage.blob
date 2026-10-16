@@ -88,7 +88,7 @@ task updateTomlFiles {
             .replace("@azure.storage.internal.avro.version@", project.azureStorageInternalAvroVersion)
             .replace("@azure.storage.common.version@", project.azureStorageCommonVersion)
             .replace("@azure.core.version@", project.azureCoreVersion)
-            .replace("@azure.core.http.jdk.httpclient.version@", project.azureCoreHttpJdkHttpClientVersion)
+            .replace("@azure.core.http.netty.version@", project.azureCoreHttpNettyVersion)
             .replace("@azure.identity.version@", project.azureIdentityVersion)
             .replace("@msal4j.version@", project.msal4jVersion)
             .replace("@msal4j.persistence.extension.version@", project.msal4jPersistenceExtensionVersion)
@@ -103,6 +103,9 @@ task updateTomlFiles {
             .replace("@data.csv.version@", project.stdlibDataCsvVersion)
             .replace("@reactor.core.version@", project.reactorCoreVersion)
             .replace("@reactive.streams.version@", project.reactiveStreamsVersion)
+            .replace("@reactor.netty.version@", project.reactorNettyVersion)
+            .replace("@netty.version@", project.nettyVersion)
+            .replace("@netty.tcnative.version@", project.nettyTcnativeVersion)
         ballerinaTomlFile.text = newBallerinaToml
 
         def newCompilerPluginToml = compilerPluginTomlFilePlaceHolder.text

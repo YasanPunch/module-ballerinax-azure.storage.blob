@@ -214,20 +214,16 @@ keeps the service's defaults, which are the values listed below. Its fields:
 
 The `TransportConfig` record covers the HTTP transport. Its fields:
 
-* `proxy`: routes the connector's traffic through an HTTP proxy, with optional credentials
-  and a bypass list. No default.
-* `connectionPool`: sets the connection timeouts. Its `connectTimeoutSeconds` defaults to 10
-  and `readTimeoutSeconds` to 60. These values apply whenever the record is not configured.
+* `proxy`: routes the connector's traffic through an HTTP, SOCKS4, or SOCKS5 proxy, with
+  optional credentials and a bypass list. No default.
+* `connectionPool`: tunes the connection pool. Its `maxConnections` defaults to 50,
+  `idleTimeoutSeconds` to 60, `connectTimeoutSeconds` to 10, and `readTimeoutSeconds` to 60.
+  These values apply whenever the pool is not configured.
 * `secureSocket`: configures custom TLS: trust material (a PEM certificate path, or a
-  PKCS12 or JKS truststore with its password), a client identity for mutual TLS (a PEM
-  certificate and PKCS#8 key pair, or a keystore with its password), the offered TLS versions
-  and cipher suites, revocation checking, an SNI host name for endpoints addressed by IP, and
-  the session timeout. The server's host name is always verified against its certificate. No
-  default.
-
-The transport is the Java platform's HTTP client. The connector carries no networking library
-of its own, so it coexists with whichever version of such a library other Ballerina modules
-ship.
+  PKCS12 or JKS truststore with its password), a client identity for mutual TLS (a certificate
+  and key pair, or a keystore with its password), the offered TLS versions and cipher suites,
+  host name verification, session reuse, revocation checking, an SNI host name, and handshake
+  and session timeouts. No default.
 
 ## 3. AdminClient
 

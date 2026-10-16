@@ -43,8 +43,8 @@ version = "@azure.core.version@"
 
 [[platform.java21.dependency]]
 groupId = "com.azure"
-artifactId = "azure-core-http-jdk-httpclient"
-version = "@azure.core.http.jdk.httpclient.version@"
+artifactId = "azure-core-http-netty"
+version = "@azure.core.http.netty.version@"
 
 [[platform.java21.dependency]]
 groupId = "com.azure"
@@ -134,3 +134,98 @@ version = "@reactor.core.version@"
 groupId = "org.reactivestreams"
 artifactId = "reactive-streams"
 version = "@reactive.streams.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.projectreactor.netty"
+artifactId = "reactor-netty-http"
+version = "@reactor.netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.projectreactor.netty"
+artifactId = "reactor-netty-core"
+version = "@reactor.netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-common"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-buffer"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-dns"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-http2"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-codec-socks"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-handler-proxy"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver-dns"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-resolver-dns-classes-macos"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-epoll"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-classes-kqueue"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-transport-native-unix-common"
+version = "@netty.version@"
+
+[[platform.java21.dependency]]
+groupId = "io.netty"
+artifactId = "netty-tcnative-classes"
+version = "@netty.tcnative.version@"
