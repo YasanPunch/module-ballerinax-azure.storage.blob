@@ -56,6 +56,31 @@ To use the Azure Blob Storage connector, you must have an Azure subscription and
 
 Restoring deleted blobs and containers needs soft delete. Under **Data management** > **Data protection**, enable **soft delete for blobs** (also settable through the connector's service configuration) and **soft delete for containers** (an account setting), each with a retention period.
 
+### Step 5: Wire the event queue (listener only)
+
+The connector's `Listener` consumes blob events from a storage queue that an Event Grid subscription fills. Create both once per storage account:
+
+1. In the storage account, navigate to **Data storage** > **Queues**, click **+ Queue**, and provide a name (for example `invoice-events`). Each listener service names the queue it consumes in its `@blob:ServiceConfig` annotation; create one queue, and one subscription, per service.
+
+2. Navigate to **Events** and click **+ Event Subscription**. Provide a name, choose the **Event Grid Schema** or **Cloud Event Schema v1.0** (the listener accepts both), and under **Event Types** select **Blob Created** and **Blob Deleted**.
+
+3. Under **Endpoint Details**, choose **Storage Queue** as the endpoint type and select the queue created in step 1.
+
+4. Under **Filters**, set a **Subject Begins With** filter such as `/blobServices/default/containers/invoices/` to limit the subscription to one container, and any further filter the service needs (a suffix, a prefix to exclude, or event types). The subscription does the filtering; the service consumes whatever its queue carries.
+
+5. Click **Create**. The credential the `Listener` uses must cover the queue as well as the blobs its handlers read: the account key does, an account SAS must span the queue and blob services, and a Microsoft Entra ID identity needs the **Storage Queue Data Contributor** role in addition to its blob data role. The poison queue a service's failed messages move to, `<queue name>-poison` unless the service names another, is created by the listener when a message first moves there.
+
+The same wiring with the Azure CLI:
+
+```bash
+az storage queue create --name invoice-events --account-name <storage account name> --account-key <storage account key>
+az eventgrid event-subscription create --name invoice-events-to-queue \
+    --source-resource-id "/subscriptions/<subscription id>/resourceGroups/<resource group>/providers/Microsoft.Storage/storageAccounts/<storage account name>" \
+    --endpoint-type storagequeue \
+    --endpoint "/subscriptions/<subscription id>/resourceGroups/<resource group>/providers/Microsoft.Storage/storageAccounts/<storage account name>/queueServices/default/queues/invoice-events" \
+    --included-event-types Microsoft.Storage.BlobCreated Microsoft.Storage.BlobDeleted
+```
+
 ## Quickstart
 
 To use the `azure.storage.blob` connector in your Ballerina application, modify the `.bal` file as follows:
@@ -128,6 +153,22 @@ check from blob:BlobEntry entry in entries
     };
 ```
 
+#### React to blobs as they arrive
+
+With the event queue wired (setup guide, step 5), a `Listener` service consumes the queue it names and dispatches each blob event to a handler. A `.json` blob created in the `reports` container binds to the handler's record; the message is acknowledged when the handler returns.
+
+```ballerina
+listener blob:Listener blobListener = check new (auth = {accountName, accountKey});
+
+@blob:ServiceConfig {queueName: "report-events"}
+isolated service on blobListener {
+    isolated remote function onBlobJson(Metric metric, blob:BlobEvent event, blob:Caller caller) returns error? {
+        io:println(string `${event.path}: ${metric.quarter} revenue ${metric.revenue}`);
+        check caller->setTags(event.path, {status: "processed"});
+    }
+}
+```
+
 ### Step 4: Run the Ballerina application
 
 Save the changes and run the Ballerina application using the following command.
@@ -138,7 +179,13 @@ bal run
 
 ## Examples
 
-The `azure.storage.blob` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples), covering use cases like archiving files to a container, handing out a time-limited download link, and reacting to blobs as they arrive.
+The `azure.storage.blob` connector provides practical examples illustrating usage in various scenarios. Explore these [examples](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples), covering the following use cases:
+
+1. [Folder archive](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples/folder-archive) - Upload a local folder into a container, tier each blob by its age, and list what the archive holds.
+2. [Time-limited download link](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples/download-link) - Upload a report and generate a time-limited, read-only SAS URL that can be handed to a third party.
+3. [Blob event processor](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples/blob-event-processor) - React to blobs as they arrive with the listener, binding invoices to a record, tagging and moving them, parking bad ones in the poison queue, and logging everything else.
+4. [Tag search](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples/tag-search) - Find blobs by their index tags with a tag query and mark the matches processed.
+5. [Blob events from Service Bus](https://github.com/ballerina-platform/module-ballerinax-azure.storage.blob/tree/main/examples/blob-events-from-service-bus) - Consume blob events delivered to an Azure Service Bus queue with `parseEvent` and read each new invoice through the client.
 
 ## Issues and projects
 

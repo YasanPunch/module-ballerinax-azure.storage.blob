@@ -316,6 +316,14 @@ public enum FileFormat {
     CSV
 }
 
+# The blob lifecycle event types this module dispatches.
+public enum BlobEventType {
+    # A blob was created or replaced
+    BLOB_CREATED,
+    # A blob was deleted
+    BLOB_DELETED
+}
+
 # The state of a copy operation.
 public enum CopyStatus {
     # The copy is in progress
@@ -690,4 +698,38 @@ public type BlockList record {|
     BlockInfo[] committedBlocks;
     # The blocks staged but not yet committed
     BlockInfo[] uncommittedBlocks;
+|};
+
+// ---------------------------------------------------------------------------
+// Listener event
+// ---------------------------------------------------------------------------
+
+# A blob lifecycle event, as delivered through Azure Event Grid. The fields describe the blob
+# at the moment the event fired.
+public type BlobEvent record {|
+    # Whether the blob was created (or replaced) or deleted
+    BlobEventType eventType;
+    # The storage account the event comes from
+    string accountName;
+    # The container the blob belongs to, derived from the event subject
+    string containerName;
+    # The blob's container-relative path, derived from the event subject
+    string path;
+    # The blob's URL on the blob endpoint, which `Caller.copyBlobFromUrl` takes as its source
+    string url;
+    # When the event fired
+    time:Utc eventTime;
+    # The storage operation that caused the event (e.g. `PutBlob`, `PutBlockList`, `CopyBlob`)
+    string api;
+    # The blob's content type, as provided by the event
+    string contentType?;
+    # The blob's size in bytes, as provided by the event
+    int contentLength?;
+    # The blob type as the event reports it: `BlockBlob`, `PageBlob`, or `AppendBlob`
+    string blobType?;
+    # The blob's entity tag, as provided by the event
+    string eTag?;
+    # An opaque string whose ordering is comparable for one blob path, for detecting stale
+    # events about the same blob
+    string sequencer;
 |};
