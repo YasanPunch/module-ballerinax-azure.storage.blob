@@ -18,6 +18,7 @@
 // client the connector builds. The TLS fixtures are a self-signed certificate with its key
 // in the three PEM forms (PKCS#8, encrypted PKCS#8, and PKCS#1).
 
+import ballerina/jballerina.java;
 import ballerina/test;
 import ballerina/time;
 
@@ -118,6 +119,36 @@ function testSecureSocketTrustMaterialGovernsTheHandshake() returns error? {
     test:assertTrue(info is Error && info !is ServiceError,
             "a handshake against untrusted material fails locally, got " + describe(info));
 }
+
+// The SDK's Netty version advisory stays out of the program's log. The transport checks its
+// logger for INFO before it scans the classpath, and the connector leaves that logger at WARNING.
+@test:Config {}
+function testNettyVersionAdvisoryIsSuppressed() returns error? {
+    _ = check new AdminClient(auth = sharedKeyAuth());
+    test:assertFalse(loggerAdmitsInfo("com.azure.core.http.netty.implementation.NettyUtility"),
+            "the Netty version advisory logger admits INFO");
+}
+
+// Whether a JUL logger would publish an INFO record, which is the check the SDK transport
+// makes before it scans the classpath for Netty versions.
+function loggerAdmitsInfo(string loggerName) returns boolean {
+    handle logger = getLogger(java:fromString(loggerName));
+    return isLoggable(logger, infoLevel());
+}
+
+function getLogger(handle name) returns handle = @java:Method {
+    'class: "java.util.logging.Logger",
+    paramTypes: ["java.lang.String"]
+} external;
+
+function infoLevel() returns handle = @java:FieldGet {
+    'class: "java.util.logging.Level",
+    name: "INFO"
+} external;
+
+function isLoggable(handle logger, handle level) returns boolean = @java:Method {
+    'class: "java.util.logging.Logger"
+} external;
 
 function assertRefused(Client|Error result, string messagePart) {
     test:assertTrue(result is Error && result !is ServiceError, "expected a client-side error, got " + describe(result));
