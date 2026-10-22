@@ -1447,7 +1447,7 @@
           "default": "",
           "metadata": {
             "label": "Relaxed Data Binding",
-            "description": "Treat a null value as an optional field and an absent field as a nilable field when binding JSON, CSV and XML content to records"
+            "description": "Relaxed data binding for the typed content handlers: JSON and CSV record binding treat a null value as an optional field and an absent field as a nilable field, and XML record binding tolerates undeclared elements"
           },
           "source": {
             "argument": {
@@ -1582,7 +1582,7 @@
               },
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -1606,7 +1606,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -1825,7 +1825,7 @@
               "target": "$service.onBlob.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "advanced": true,
@@ -1868,7 +1868,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -2008,7 +2008,7 @@
             "routing": {
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -2032,7 +2032,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -2132,7 +2132,7 @@
               },
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -2156,7 +2156,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.txt",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -2341,7 +2341,7 @@
               "target": "$service.onBlobText.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "advanced": true,
@@ -2384,7 +2384,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -2524,7 +2524,7 @@
             "routing": {
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -2548,7 +2548,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.txt",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -2648,7 +2648,7 @@
               },
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -2672,7 +2672,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.json",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -2871,7 +2871,7 @@
               "target": "$service.onBlobJson.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "advanced": true,
@@ -2914,7 +2914,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -3054,7 +3054,7 @@
             "routing": {
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -3078,7 +3078,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.json",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -3178,7 +3178,7 @@
               },
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -3202,7 +3202,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.xml",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -3391,7 +3391,7 @@
               "target": "$service.onBlobXml.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "advanced": true,
@@ -3434,7 +3434,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -3574,7 +3574,7 @@
             "routing": {
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -3598,7 +3598,7 @@
               "properties": {
                 "namePattern": {
                   "key": "namePattern",
-                  "placeholder": ".*\\.csv",
+                  "placeholder": ".*\\.xml",
                   "default": "",
                   "metadata": {
                     "label": "Blob Name Pattern",
@@ -3698,7 +3698,7 @@
               },
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -3956,7 +3956,7 @@
               "target": "$service.onBlobCsv.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "advanced": true,
@@ -3999,7 +3999,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -4139,7 +4139,7 @@
             "routing": {
               "metadata": {
                 "label": "Routing",
-                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when its name and its content type satisfy the patterns set here."
+                "description": "Override the extension-based routing of created blobs for this handler. A blob matches when either its name or its content type satisfies the pattern set here."
               },
               "state": {
                 "advanced": true,
@@ -4258,7 +4258,7 @@
               "target": "$service.onBlobDelete.event",
               "metadata": {
                 "label": "Blob Event (event)",
-                "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
               },
               "state": {
                 "hidden": true,
@@ -4300,7 +4300,7 @@
                   },
                   "metadata": {
                     "label": "event",
-                    "description": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
+                    "description": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer."
                   },
                   "state": {
                     "enabled": true,
@@ -4436,7 +4436,7 @@
           "target": "$service.onError",
           "metadata": {
             "label": "On Error",
-            "description": "Invoked when a poll fails, a message cannot be parsed, a blob's content cannot be fetched or bound, or a move to the poison queue fails. It runs before the message is disposed of; errors returned by the other handlers are not sent here, they settle the message.",
+            "description": "Invoked when a poll fails, a message cannot be parsed, a blob's content cannot be fetched or bound, the Caller for the event's container cannot be built, a message arrives past the delivery limit, or a move to the poison queue fails. It runs before the message is disposed of; errors returned by the other handlers are not sent here, they settle the message.",
             "addLabel": "Add On Error Handler",
             "badge": "onError"
           },
@@ -4584,7 +4584,7 @@
               "target": "$service.onError.caller",
               "metadata": {
                 "label": "Azure Blob Storage Connection (caller)",
-                "description": "A Caller bound to the event's container, or () when the failure carries no event."
+                "description": "A Caller bound to the event's container, or () when the failure carries no event or the Caller could not be built."
               },
               "state": {
                 "advanced": true,
@@ -4627,7 +4627,7 @@
                   },
                   "metadata": {
                     "label": "caller",
-                    "description": "A Caller bound to the event's container, or () when the failure carries no event."
+                    "description": "A Caller bound to the event's container, or () when the failure carries no event or the Caller could not be built."
                   },
                   "state": {
                     "enabled": true,

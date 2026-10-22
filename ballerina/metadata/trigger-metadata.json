@@ -111,7 +111,7 @@
             "id": "$service.onBlobText",
             "name": "onBlobText",
             "kind": "remote",
-            "doc": "Invoked for each created .txt blob, or a blob whose content type is text, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
+            "doc": "Invoked for each created .txt blob, a blob without an extension whose content type is text, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
             "presence": "optional",
             "annotations": [
               "$functionConfig"
@@ -164,7 +164,7 @@
             "id": "$service.onBlobJson",
             "name": "onBlobJson",
             "kind": "remote",
-            "doc": "Invoked for each created .json blob, or a blob whose content type is JSON, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
+            "doc": "Invoked for each created .json blob, a blob without an extension whose content type is JSON, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
             "presence": "optional",
             "annotations": [
               "$functionConfig"
@@ -243,7 +243,7 @@
             "id": "$service.onBlobXml",
             "name": "onBlobXml",
             "kind": "remote",
-            "doc": "Invoked for each created .xml blob, or a blob whose content type is XML, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
+            "doc": "Invoked for each created .xml blob, a blob without an extension whose content type is XML, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
             "presence": "optional",
             "annotations": [
               "$functionConfig"
@@ -322,7 +322,7 @@
             "id": "$service.onBlobCsv",
             "name": "onBlobCsv",
             "kind": "remote",
-            "doc": "Invoked for each created .csv blob, or a blob whose content type is CSV, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Declaring a stream parameter reads the blob in chunks instead of loading it into memory. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
+            "doc": "Invoked for each created .csv blob, a blob without an extension whose content type is CSV, or any created blob matching the patterns set on @blob:FunctionConfig. Falls through to onBlob when not declared. Declaring a stream parameter reads the blob in chunks instead of loading it into memory. Returning a DeadLetterError moves the message to the poison queue at once, a RetryError redelivers it after the delay it names, and any other error redelivers it.",
             "presence": "optional",
             "annotations": [
               "$functionConfig"
@@ -492,7 +492,7 @@
               {
                 "id": "$service.onBlobDelete.event",
                 "name": "event",
-                "doc": "The event: whether the blob was created or deleted, its container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer.",
+                "doc": "The event: whether the blob was created or deleted, its storage account, container, path, URL, time, the API that fired it, content type and length, ETag, and sequencer.",
                 "type": {
                   "name": "BlobEvent"
                 },
@@ -501,7 +501,7 @@
               {
                 "id": "$service.onBlobDelete.caller",
                 "name": "caller",
-                "doc": "The storage account connection, for acting on blobs while the event is handled: read, download, upload, delete, copy from a URL, and set tags.",
+                "doc": "A Caller bound to the event's container, for acting on the blob while the event is handled: read, download, upload, delete, copy from a URL, and set tags.",
                 "type": {
                   "name": "Caller"
                 },
@@ -526,7 +526,7 @@
             "id": "$service.onError",
             "name": "onError",
             "kind": "remote",
-            "doc": "Invoked when a poll of the service's queue fails, a message cannot be parsed, a blob's content cannot be fetched or bound, a move to the poison queue fails, or a message arrives past its delivery limit. It runs before the message is disposed of and never settles it. Errors returned by the other handlers are not sent here; they settle the message.",
+            "doc": "Invoked when a poll of the service's queue fails, a message cannot be parsed, a blob's content cannot be fetched or bound, the Caller for the event's container cannot be built, a move to the poison queue fails, or a message arrives past its delivery limit. It runs before the message is disposed of and never settles it. Errors returned by the other handlers are not sent here; they settle the message.",
             "presence": "optional",
             "params": [
               {
