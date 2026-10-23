@@ -4436,7 +4436,7 @@
           "target": "$service.onError",
           "metadata": {
             "label": "On Error",
-            "description": "Invoked when a poll fails, a message cannot be parsed, a blob's content cannot be fetched or bound, the Caller for the event's container cannot be built, a message arrives past the delivery limit, or a move to the poison queue fails. It runs before the message is disposed of; errors returned by the other handlers are not sent here, they settle the message.",
+            "description": "Invoked when a poll, a message parse, a content fetch or binding, or a poison move fails.",
             "addLabel": "Add On Error Handler",
             "badge": "onError"
           },
@@ -4445,7 +4445,7 @@
               "target": "$service.onError.err",
               "metadata": {
                 "label": "Azure Blob Storage Error",
-                "description": "The failure the listener reports: a failed poll, an unparseable message, content that could not be fetched or bound, or a failed move to the poison queue."
+                "description": "The failure the listener reports."
               },
               "state": {
                 "hidden": true,

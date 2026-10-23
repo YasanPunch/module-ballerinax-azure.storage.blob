@@ -526,7 +526,7 @@
             "id": "$service.onError",
             "name": "onError",
             "kind": "remote",
-            "doc": "Invoked when a poll of the service's queue fails, a message cannot be parsed, a blob's content cannot be fetched or bound, the Caller for the event's container cannot be built, a move to the poison queue fails, or a message arrives past its delivery limit. It runs before the message is disposed of and never settles it. Errors returned by the other handlers are not sent here; they settle the message.",
+            "doc": "Invoked when a poll, a message parse, a content fetch or binding, or a poison move fails.",
             "presence": "optional",
             "params": [
               {
